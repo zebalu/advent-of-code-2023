@@ -19,3 +19,10 @@ gradle-app.setting
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+/aoc2023/.settings
+/aoc2023/bin
+/aoc2023/build
+/aoc2023/.classpath
+/aoc2023/.project
+/.settings
+/.project
