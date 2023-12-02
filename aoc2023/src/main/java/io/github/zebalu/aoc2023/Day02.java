@@ -15,8 +15,8 @@ public class Day02 {
 		List<Game> games = readLines().stream().map(Game::fromString).toList();
 		int sumIds = games.stream().filter(g -> g.maxRed() <= 12 && g.maxGreen() <= 13 && g.maxBlue() <= 14)
 				.mapToInt(Game::id).sum();
-		int sumPows = games.stream().mapToInt(g -> g.maxRed() * g.maxBlue() * g.maxGreen()).sum();
 		System.out.println(sumIds);
+		int sumPows = games.stream().mapToInt(g -> g.maxRed() * g.maxBlue() * g.maxGreen()).sum();
 		System.out.println(sumPows);
 	}
 
