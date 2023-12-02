@@ -18,6 +18,9 @@ import io.github.zebalu.aoc2023.days.Day02;
 public class App {
 
     public static void main(String[] args) {
+        if(args.length > 0 && "download".equals(args[0])) {
+            new Downloader(System.getenv("AOC_SESSION_ID")).downloadInputs();
+        }
         exec(new DisplayData(1, "Trebuchet?!", Day01::main));
         exec(new DisplayData(2, "Cube Conundrum", Day02::main));
     }

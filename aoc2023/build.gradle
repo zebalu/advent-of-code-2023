@@ -49,3 +49,16 @@ for(int i=0; i<25; ++i) {
         description = "Execute Day$d"
     }
 }
+
+tasks.register("downloadInputs", JavaExec) {
+        doFirst {
+            if(!System.getenv('AOC_SESSION_ID')) {
+                System.err.println('Download will not work as AOC_SESSION_ID environment variable is not set');
+            }
+        }
+        classpath = sourceSets.main.runtimeClasspath
+        mainClass = "io.github.zebalu.aoc2023.main.App"
+        args 'download'
+        group = 'AOC util'
+        description = "download inputs if you have AOC_SESSION_ID environment variable set correctly"
+}
