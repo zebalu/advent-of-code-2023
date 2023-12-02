@@ -32,7 +32,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'io.github.zebalu.aoc2023.App'
+    mainClass = 'io.github.zebalu.aoc2023.main.App'
 }
 
 tasks.named('test') {
@@ -44,7 +44,7 @@ for(int i=0; i<25; ++i) {
     String d = String.format('%02d', (i+1));
     tasks.register("day$d", JavaExec) {
         classpath = sourceSets.main.runtimeClasspath
-        mainClass = "io.github.zebalu.aoc2023.Day${d}"
+        mainClass = "io.github.zebalu.aoc2023.days.Day${d}"
         group = 'day'
         description = "Execute Day$d"
     }

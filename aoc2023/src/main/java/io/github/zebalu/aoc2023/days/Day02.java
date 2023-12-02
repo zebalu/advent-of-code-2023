@@ -1,4 +1,4 @@
-package io.github.zebalu.aoc2023;
+package io.github.zebalu.aoc2023.days;
 
 import java.io.BufferedReader;
 import java.io.File;
