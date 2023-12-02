@@ -49,7 +49,7 @@ public class Day01 {
 	}
 
 	private static List<String> readLines() {
-		try (BufferedReader br = new BufferedReader(new FileReader(new File("day01.txt"), StandardCharsets.UTF_8))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(new File("day01.txt").getAbsoluteFile(), StandardCharsets.UTF_8))) {
 			return br.lines().toList();
 		} catch (IOException e) {
 			throw new IllegalStateException(e);

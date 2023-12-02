@@ -12,6 +12,7 @@ public class App {
 
     public static void main(String[] args) {
         exec(new DisplayData(1, "Trebuchet?!", Day01::main));
+        exec(new DisplayData(2, "Cube Conundrum", Day02::main));
     }
     
     private static void exec(DisplayData dd) {
