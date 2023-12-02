@@ -37,14 +37,12 @@ public class Day02 {
             for (String s : str.split(", ")) {
                 String[] ps = s.split(" ");
                 int v = Integer.parseInt(ps[0]);
-                if (s.endsWith("red")) {
-                    r = v;
-                } else if (s.endsWith("green")) {
-                    g = v;
-                } else if (s.endsWith("blue")) {
-                    b = v;
-                } else {
-                    throw new IllegalArgumentException(s);
+                String color = ps[1];
+                switch (color) {
+                case "red" -> r = v;
+                case "green" -> g = v;
+                case "blue" -> b = v;
+                default -> throw new IllegalStateException(s);
                 }
             }
             return new Round(r, g, b);
