@@ -14,25 +14,26 @@ public class App {
         exec(new DisplayData(1, "Trebuchet?!", Day01::main));
         exec(new DisplayData(2, "Cube Conundrum", Day02::main));
     }
-    
+
     private static void exec(DisplayData dd) {
-    	String title = String.format(" Day %02d: %s ", dd.number(), dd.name());
-    	StringBuffer titleLine = new StringBuffer();
-    	titleLine.append(repeat("#", (80-title.length())/2));
-    	titleLine.append(title);
-    	titleLine.append(repeat("#", 80-titleLine.length()));
-    	System.out.println(titleLine.toString());
-    	Instant start = Instant.now();
-    	dd.main().accept(new String[] {});
-    	Instant end = Instant.now();
-    	System.out.println(repeat("-", 80));
-    	System.out.println(Duration.between(start, end).toMillis()+" ms");
-    	System.out.println(repeat("*", 80));
+        String title = String.format(" Day %02d: %s ", dd.number(), dd.name());
+        StringBuffer titleLine = new StringBuffer();
+        titleLine.append(repeat("#", (80 - title.length()) / 2));
+        titleLine.append(title);
+        titleLine.append(repeat("#", 80 - titleLine.length()));
+        System.out.println(titleLine.toString());
+        Instant start = Instant.now();
+        dd.main().accept(new String[] {});
+        Instant end = Instant.now();
+        System.out.println(repeat("-", 80));
+        System.out.println(Duration.between(start, end).toMillis() + " ms");
+        System.out.println(repeat("*", 80));
     }
-    
+
     private static String repeat(String data, int times) {
-    	return String.join("", Collections.nCopies(times, data));
+        return String.join("", Collections.nCopies(times, data));
     }
-    
-    record DisplayData(int number, String name, Consumer<String[]> main) {}
+
+    record DisplayData(int number, String name, Consumer<String[]> main) {
+    }
 }
