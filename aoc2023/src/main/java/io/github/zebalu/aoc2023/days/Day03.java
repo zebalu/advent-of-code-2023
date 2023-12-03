@@ -35,7 +35,7 @@ public class Day03 {
     }
 
     private static void part2(List<String> matrix) {
-        long sum = 0L;
+        int sum = 0;
         for (int y = 0; y < matrix.size(); ++y) {
             String line = matrix.get(y);
             for (int x = 0; x < line.length(); ++x) {
