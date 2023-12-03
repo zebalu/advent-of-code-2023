@@ -17,22 +17,32 @@ import io.github.zebalu.aoc2023.days.Day02;
 import io.github.zebalu.aoc2023.days.Day03;
 
 public class App {
+    
+    private static final int CONSOLE_WIDTH = 80;
 
     public static void main(String[] args) {
         if(args.length > 0 && "download".equals(args[0])) {
-            new Downloader(System.getenv("AOC_SESSION_ID")).downloadInputs();
+            String sessionId = System.getenv("AOC_SESSION_ID");
+            if(sessionId == null || sessionId.isBlank()) {
+                System.err.println("Session ID in environment variable AOC_SESSION_ID is not set correctly!");
+                System.exit(1);
+            }
+            new Downloader(sessionId).downloadInputs();
         }
+        Instant start = Instant.now();
         exec(new DisplayData(1, "Trebuchet?!", Day01::main));
         exec(new DisplayData(2, "Cube Conundrum", Day02::main));
         exec(new DisplayData(3, "Gear Ratios", Day03::main));
+        Instant end = Instant.now();
+        System.out.println("so far:\t"+Duration.between(start, end).toMillis()+" ms...");
     }
 
     private static void exec(DisplayData dd) {
         String title = String.format(" Day %02d: %s ", dd.number(), dd.name());
-        StringBuffer titleLine = new StringBuffer();
-        titleLine.append(repeat("#", (80 - title.length()) / 2));
+        StringBuilder titleLine = new StringBuilder();
+        titleLine.append(repeat("#", (CONSOLE_WIDTH - title.length()) / 2));
         titleLine.append(title);
-        titleLine.append(repeat("#", 80 - titleLine.length()));
+        titleLine.append(repeat("#", CONSOLE_WIDTH - titleLine.length()));
         System.out.println(titleLine.toString());
         PrintStream save = System.out;
         MeasuringPrintStream measuringStream = new MeasuringPrintStream(save);
@@ -42,14 +52,14 @@ public class App {
             dd.main().accept(new String[] {});
             Instant end = Instant.now();
             System.setOut(save);
-            System.out.println(repeat("-", 80));
+            System.out.println(repeat("-", CONSOLE_WIDTH));
             System.out.println(
                     "part1 time:\t" + Duration.between(start, measuringStream.times.getFirst()).toMillis() + " ms");
             System.out.println("part2 time:\t"
                     + Duration.between(measuringStream.times.getFirst(), measuringStream.times.getLast()).toMillis()
                     + " ms");
             System.out.println("full time:\t" + Duration.between(start, end).toMillis() + " ms");
-            System.out.println(repeat("*", 80));
+            System.out.println(repeat("*", CONSOLE_WIDTH));
         } finally {
             System.setOut(save);
         }
