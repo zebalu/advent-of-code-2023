@@ -27,8 +27,8 @@ class Downloader {
                 .filter(i -> Instant.parse(String.format("2023-12-%02dT05:00:00Z", i)).isBefore(Instant.now()))
                 .forEach(i -> {
                     try {
-                        System.out.println("Downloading Day "+i);
-                        var httpRequest = HttpRequest.newBuilder().header("session", sessionId).GET()
+                        System.out.println("Downloading Day " + i);
+                        var httpRequest = HttpRequest.newBuilder().GET()
                                 .uri(new URI("https://adventofcode.com/2023/day/" + i + "/input")).build();
                         var data = httpClient.send(httpRequest, BodyHandlers.ofString()).body();
                         var target = new File(String.format("day%02d.txt", i));
