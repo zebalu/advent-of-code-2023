@@ -7,22 +7,30 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 public class Day06 {
     public static void main(String[] args) {
         List<Race> races = Race.fromLines(readInput());
         
-        long configurations = races.stream().map(Race::countBeatingOptions).reduce(1L, (a,b)->a*b);
-        System.out.println(configurations);
+        System.out.println(races.stream().map(Race::countRecordBreakingCases).reduce(1L, (a,b)->a*b));
         
-        Race gigaRace = Optional.of(races.stream().map(r->new String[] {""+r.time,""+r.distance}).reduce(new String[] {"", ""}, (a,b)->new String[] {a[0]+b[0], a[1]+b[1]})).map(s->new long[] {Long.parseLong(s[0]), Long.parseLong(s[1])}).map(ls->new Race(ls[0], ls[1])).orElseThrow();
-        System.out.println(gigaRace.countBeatingOptions());
+        Race gigaRace = Optional
+                .of(races.stream().map(r -> new String[] { "" + r.time, "" + r.distance })
+                        .reduce(new String[] { "", "" }, (a, b) -> new String[] { a[0] + b[0], a[1] + b[1] }))
+                .map(s -> new long[] { Long.parseLong(s[0]), Long.parseLong(s[1]) }).map(ls -> new Race(ls[0], ls[1]))
+                .orElseThrow();
+
+        System.out.println(gigaRace.countRecordBreakingCases());
     }
     
     record Race(long time, long distance) {
-        long countBeatingOptions() {
-            return LongStream.range(1, time-1).filter(c->distance<(time-c)*c).count();
+        long countRecordBreakingCases() {
+            var sqrt_b2_4ac = Math.sqrt(time * time - 4 * distance);
+            var res1 = (-time - sqrt_b2_4ac) / -2.0;
+            var res2 = (-time + sqrt_b2_4ac) / -2.0;
+            var min = (long) Math.ceil(Math.min(res1, res2));
+            var max = (long) Math.ceil(Math.max(res1, res2));
+            return max - min;
         }
         static List<Race> fromLines(List<String> lines) {
             List<List<Integer>> numList = lines.stream().map(l->l.replaceAll(" +", " ")).map(Race::parseNums).toList();
