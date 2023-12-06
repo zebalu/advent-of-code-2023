@@ -16,6 +16,8 @@ import io.github.zebalu.aoc2023.days.Day01;
 import io.github.zebalu.aoc2023.days.Day02;
 import io.github.zebalu.aoc2023.days.Day03;
 import io.github.zebalu.aoc2023.days.Day04;
+import io.github.zebalu.aoc2023.days.Day05;
+import io.github.zebalu.aoc2023.days.Day06;
 
 public class App {
     
@@ -35,6 +37,8 @@ public class App {
         exec(new DisplayData(2, "Cube Conundrum", Day02::main));
         exec(new DisplayData(3, "Gear Ratios", Day03::main));
         exec(new DisplayData(4, "Scratchcards", Day04::main));
+        exec(new DisplayData(5, "If You Give A Seed A Fertilizer", Day05::main));
+        exec(new DisplayData(6, "Wait For It", Day06::main));
         Instant end = Instant.now();
         System.out.println("so far:\t"+Duration.between(start, end).toMillis()+" ms...");
     }
