@@ -17,37 +17,15 @@ public class Day08 {
         part1(instructions, map);
         part2(instructions, map);
     }
+    
+    private static void part1(String instructions, Map<String, LeftRight> map) {
+        System.out.println(pathLength(instructions, map, "AAA"));
+    }
 
     private static void part2(String instructions, Map<String, LeftRight> map) {
         List<String> at = map.keySet().stream().filter(s->s.endsWith("A")).toList();
         List<Integer> steps = at.stream().map(s->pathLength(instructions, map, s)).toList();
         System.out.println(steps.stream().mapToLong(i->(long)i).reduce(1L, (a,b)->leastCommonMultiplier(a,b)));
-    }
-    
-    public static long leastCommonMultiplier(long a, long b) {
-        return (a * b) / greatestCommonDenominator(a, b);
-    }
-    
-    public static long greatestCommonDenominator(long a, long b) {
-        if (b == 0) {
-            return a;
-        } else {
-            return (greatestCommonDenominator(b, a % b));
-        }
-    }
-
-    private static void part1(String instructions, Map<String, LeftRight> map) {
-        int count = 0;
-        int pointer = 0;
-        String at = "AAA";
-        String goal = "ZZZ";
-        while(!at.equals(goal)) {
-            ++count;
-            char step = instructions.charAt(pointer);
-            at = map.get(at).get(step);
-            pointer = (pointer+1)%instructions.length();
-        }
-        System.out.println(count);
     }
     
     private static int pathLength(String instructions, Map<String, LeftRight> map, String start) {
@@ -63,17 +41,29 @@ public class Day08 {
         return count;
     }
     
-    private static String readInput() {
-        try {
-            return Files.readString(Path.of("day08.txt").toAbsolutePath());
-        } catch (IOException ioe) {
-            throw new IllegalStateException(ioe);
+    public static long leastCommonMultiplier(long a, long b) {
+        return (a * b) / greatestCommonDenominator(a, b);
+    }
+    
+    public static long greatestCommonDenominator(long a, long b) {
+        if (b == 0) {
+            return a;
+        } else {
+            return (greatestCommonDenominator(b, a % b));
         }
     }
     
     private static void addTo(Map<String, LeftRight> map, String line) {
         var parts = line.split(" = ");
         map.put(parts[0], LeftRight.parse(parts[1]));
+    }
+    
+    private static String readInput() {
+        try {
+            return Files.readString(Path.of("day08.txt").toAbsolutePath());
+        } catch (IOException ioe) {
+            throw new IllegalStateException(ioe);
+        }
     }
     
     private record LeftRight(String left, String right) {
