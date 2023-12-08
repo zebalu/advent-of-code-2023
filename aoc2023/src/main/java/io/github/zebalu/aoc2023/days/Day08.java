@@ -15,7 +15,6 @@ public class Day08 {
         Map<String, LeftRight> map = new HashMap<>();
         parts[1].lines().forEach(l->addTo(map, l));
         part1(instructions, map);
-        //part2Bf(instructions, map);
         part2(instructions, map);
     }
 
@@ -35,19 +34,6 @@ public class Day08 {
         } else {
             return (greatestCommonDenominator(b, a % b));
         }
-    } 
-
-    private static void part2Bf(String instructions, Map<String, LeftRight> map) {
-        List<String> at = map.keySet().stream().filter(s->s.endsWith("A")).toList();
-        int count = 0;
-        int pointer = 0;
-        while(!at.stream().allMatch(s->s.endsWith("Z"))) {
-            ++count;
-            char step = instructions.charAt(pointer);
-            at = at.stream().map(a->map.get(a).get(step)).toList();
-            pointer = (pointer+1)%instructions.length();
-        }
-        System.out.println(count);
     }
 
     private static void part1(String instructions, Map<String, LeftRight> map) {
