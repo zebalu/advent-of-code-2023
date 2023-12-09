@@ -94,14 +94,15 @@ public class Day05 {
     record SrcRange(long start, long end) implements Comparable<SrcRange> {
         private static final Comparator<SrcRange> SRC_RANGE_COMPARATOR = Comparator.comparing(SrcRange::start).thenComparingLong(SrcRange::end);
         long length() { return end-start;}
-        boolean contains(long element) {return start <= element && element < end;}
         boolean contains(SrcRange other) {
             return start <= other.start && other.end <= end;
         }
         boolean hasIntersection(SrcRange other) {
-            return contains(other) || start <= other.start && other.start < end && end < other.end;
+            if(other.start<start) {
+                return other.hasIntersection(this);
+            }
+            return contains(other) || start < other.start && other.start < end;
         }
-        boolean isEmpty() { return end <= start; }
         @Override
         public int compareTo(SrcRange other) { return SRC_RANGE_COMPARATOR.compare(this, other); }
         static List<SrcRange> intersect(SrcRange a, SrcRange b) {
@@ -111,8 +112,6 @@ public class Day05 {
                 return List.of(first);
             } else if(first.contains(second)) {
                 return List.of(new SrcRange(first.start, second.start), new SrcRange(second.start, second.end), new SrcRange(second.end, first.end));
-            } else if(second.contains(first)) {
-                return List.of(new SrcRange(first.start, first.end), new SrcRange(first.end, second.end));
             } else if(first.hasIntersection(second)) {
                 return List.of(new SrcRange(first.start, second.start), new SrcRange(second.start, first.end), new SrcRange(first.end, second.end));
             } else {
