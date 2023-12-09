@@ -29,7 +29,7 @@ class Day05Test {
         }
         
         @Test 
-        void sameIsContainer() {
+        void sameIsContained() {
             SrcRange rng1 = new SrcRange(3, 7);
             SrcRange rng2 = new SrcRange(3,7);
             assertTrue(rng1.contains(rng2));
