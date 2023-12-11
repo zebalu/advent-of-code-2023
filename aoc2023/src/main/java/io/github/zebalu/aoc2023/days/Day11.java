@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class Day11 {
     public static void main(String[] args) {
@@ -47,37 +48,26 @@ public class Day11 {
     
     private static class Universe {
         
-        List<List<Character>> expandable = new ArrayList<>();
+        private final List<String> expandable;
         
-        List<Integer> countInRow = new ArrayList<>();
-        List<Integer> countInCol = new ArrayList<>();
+        private final List<Integer> countInRow = new ArrayList<>();
+        private final List<Integer> countInCol = new ArrayList<>();
         
         public Universe(String baseMap) {
-            baseMap.lines().map(l->l.toCharArray()).map(chs ->{
-                List<Character> lchs = new ArrayList<>();
-                for(var ch : chs) {
-                    lchs.add(ch);
-                }
-                return lchs;
-            }).forEach(expandable::add);
+            expandable = baseMap.lines().toList();
             for(int y=0; y<expandable.size(); ++y) {
                 countInRow.add(countInRow(y));
             }
-            for(int x=0; x<expandable.getFirst().size(); ++x) {
+            for(int x=0; x<expandable.getFirst().length(); ++x) {
                 countInCol.add(countInColum(x));
             }
         }
         
         List<Coord> getGalaxies() {
-            List<Coord> galaxies = new ArrayList<>();
-            for(int y=0; y<expandable.size(); ++y) {
-                for(int x=0; x<expandable.get(y).size(); ++x) {
-                    if(expandable.get(y).get(x) == '#') {
-                        galaxies.add(new Coord(x,y));
-                    }
-                }
-            }
-            return galaxies;
+            return IntStream.range(0, expandable.size())
+                    .mapToObj(y -> IntStream.range(0, expandable.getFirst().length())
+                            .filter(x -> expandable.get(y).charAt(x) == '#').mapToObj(x -> new Coord(x, y)))
+                    .flatMap(s -> s).toList();
         }
         
         long pathFrom(Coord a, Coord b, int mul) {
@@ -92,26 +82,16 @@ public class Day11 {
             return walkOn(countInRow, a, b, mul);
         }
         
-        private long walkOn(List<Integer> count, int a, int b, int mul) {
-            int f = Math.min(a, b);
-            int s = Math.max(a, b);
-            long sum = 0L;
-            for(int i=f; i<s; ++i) {
-                if(count.get(i) == 0) {
-                    sum += mul;
-                } else {
-                    sum += 1;
-                }
-            }
-            return sum;
+        private long walkOn(List<Integer> count, int a, int b, long mul) {
+            return IntStream.range(Math.min(a, b), Math.max(a, b)).mapToLong(i->count.get(i)==0?mul:1L).sum();
         }
         
         private int countInColum(int x) {
-            return expandable.stream().map(l->l.get(x)).mapToInt(c->'#'==c?1:0).sum();
+            return expandable.stream().map(l->l.charAt(x)).mapToInt(c->'#'==c?1:0).sum();
         }
         
         private int countInRow(int y) {
-            return expandable.get(y).stream().mapToInt(c->'#'==c?1:0).sum();
+            return expandable.get(y).chars().map(c->'#'==c?1:0).sum();
         }
         
     }
