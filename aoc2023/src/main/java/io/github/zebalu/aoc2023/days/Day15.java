@@ -59,16 +59,12 @@ public class Day15 {
     }
 
     private static int indexOf(List<Operation> box, Operation o) {
-        int i = 0;
-        boolean found = false;
-        for (; i < box.size() && !found; ++i) {
-            found = o.label().equals(box.get(i).label());
+        for (int i = 0; i < box.size(); ++i) {
+            if (o.label().equals(box.get(i).label())) {
+                return i;
+            }
         }
-        if (found) {
-            return --i;
-        } else {
-            return -1;
-        }
+        return -1;
     }
 
     private static int hash(String str) {
