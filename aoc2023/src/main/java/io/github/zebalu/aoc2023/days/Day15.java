@@ -9,10 +9,11 @@ import java.util.List;
 
 public class Day15 {
     public static void main(String[] args) {
-        String input = readInput(); // example;//readInput();
-        var list = Arrays.stream(input.strip().split(",")).toList();
+        var list = Arrays.stream(readInput().strip().split(",")).toList();
+        
         System.out.println(list.stream().mapToInt(Day15::hash).sum());
-        var boxes = calculateHashMap(list.stream().map(String::strip).map(Operation::fromString).toList());
+        
+        var boxes = calculateHashMap(list.stream().map(Operation::fromString).toList());
         int sum = calculateSum(boxes);
         System.out.println(sum);
     }
@@ -68,24 +69,16 @@ public class Day15 {
     }
 
     private static int hash(String str) {
-        int h = 0;
-        for (int i = 0; i < str.length(); ++i) {
-            h = ((h + str.charAt(i)) * 17) % 256;
-        }
-        return h;
+        return str.chars().reduce(0, (a, b) -> ((a + b) * 17) % 256);
     }
 
-    private record Operation(String label, int focal, boolean add) {
+    private record Operation(String label, int focal, int hash, boolean add) {
         static Operation fromString(String desc) {
             if (desc.endsWith("-")) {
-                return new Operation(desc.substring(0, desc.length() - 1), Integer.MIN_VALUE, false);
+                return new Operation(desc.substring(0, desc.length() - 1), Integer.MIN_VALUE, Day15.hash(desc.substring(0, desc.length()-1)), false);
             }
             var parts = desc.split("=");
-            return new Operation(parts[0], Integer.parseInt(parts[1]), true);
-        }
-
-        int hash() {
-            return Day15.hash(label);
+            return new Operation(parts[0], Integer.parseInt(parts[1]), Day15.hash(parts[0]), true);
         }
     }
 
