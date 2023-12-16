@@ -8,6 +8,7 @@ import java.util.stream.*;
 import static java.util.function.Predicate.not;
 
 public class Day16 {
+    
     public static void main(String[] args) {
         String input = readInput();
         List<String> tiles = input.lines().toList();
@@ -91,22 +92,27 @@ public class Day16 {
             throw new IllegalStateException(e);
         }
     }
+
     private record Coord(int x, int y) {
         Coord add(Direction direction) {
-            return new Coord(x+direction.step.x, y+direction.step.y);
+            return new Coord(x + direction.step.x, y + direction.step.y);
         }
     }
+
     private static enum Direction {
-        LEFT(new Coord(-1,0)), RIGHT(new Coord(1,0)), UP(new Coord(0,-1)), DOWN(new Coord(0,1));
+        LEFT(new Coord(-1, 0)), RIGHT(new Coord(1, 0)), UP(new Coord(0, -1)), DOWN(new Coord(0, 1));
+
         private Coord step;
+
         private Direction(Coord step) {
-            this.step=step;
+            this.step = step;
         }
     }
+
     private record Beam(Coord position, Direction direction) {
         Beam step() {
             return new Beam(position.add(direction), direction);
         }
     }
-    
+ 
 }
