@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
 
@@ -17,21 +19,20 @@ public class Day16 {
         List<String> tiles = input.lines().toList();
         
         System.out.println(countEnergized(tiles, new Beam(new Coord(0,0), Coord.RIGHT)));
+        
         List<Beam> starts = collectStartBeams(tiles.size(), tiles.getFirst().length());
         System.out.println(starts.stream().parallel().mapToLong(start -> countEnergized(tiles, start)).max().orElseThrow());
     }
 
     private static List<Beam> collectStartBeams(int height, int width) {
-        List<Beam> starts = new ArrayList<>();
-        for(int y=0; y<height; ++y) {
-            starts.add(new Beam(new Coord(0,y), Coord.RIGHT));
-            starts.add(new Beam(new Coord(width-1,y), Coord.RIGHT));
-        }
-        for(int x=0; x<width; ++x) {
-            starts.add(new Beam(new Coord(x,0), Coord.DOWN));
-            starts.add(new Beam(new Coord(0, height-1), Coord.UP));
-        }
-        return starts;
+        return Stream
+                .concat(IntStream.range(0, height).mapToObj(y -> List.of(
+                                new Beam(new Coord(0, y), Coord.RIGHT),
+                                new Beam(new Coord(width - 1, y), Coord.LEFT))),
+                        IntStream.range(0, width).mapToObj(x -> List.of(
+                                new Beam(new Coord(x, 0), Coord.DOWN),
+                                new Beam(new Coord(x, height - 1), Coord.UP))))
+                .flatMap(List::stream).toList();
     }
     
     private static long countEnergized(List<String> tiles, Beam start) {
@@ -61,40 +62,36 @@ public class Day16 {
                     }
                 }
                 case '/' -> {
-                    if (beam.direction().x() != 0) {
-                        if (beam.direction().x() < 0) {
-                            yield List.of(new Beam(beam.position(), Coord.DOWN).step());
-                        } else {
-                            yield List.of(new Beam(beam.position(), Coord.UP).step());
-                        }
+                    if (beam.direction == Coord.LEFT) {
+                        yield List.of(new Beam(beam.position(), Coord.DOWN).step());
+                    } else if (beam.direction == Coord.RIGHT) {
+                        yield List.of(new Beam(beam.position(), Coord.UP).step());
+                    } else if (beam.direction == Coord.UP) {
+                        yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
+                    } else if (beam.direction == Coord.DOWN) {
+                        yield List.of(new Beam(beam.position(), Coord.LEFT).step());
                     } else {
-                        if (beam.direction().y() < 0) {
-                            yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
-                        } else {
-                            yield List.of(new Beam(beam.position(), Coord.LEFT).step());
-                        }
+                        throw new IllegalStateException("unknown direction: " + beam.direction());
                     }
                 }
                 case '\\' -> {
-                    if (beam.direction().x() != 0) {
-                        if (beam.direction().x() < 0) {
-                            yield List.of(new Beam(beam.position(), Coord.UP).step());
-                        } else {
-                            yield List.of(new Beam(beam.position(), Coord.DOWN).step());
-                        }
+                    if (beam.direction == Coord.LEFT) {
+                        yield List.of(new Beam(beam.position(), Coord.UP).step());
+                    } else if (beam.direction == Coord.RIGHT) {
+                        yield List.of(new Beam(beam.position(), Coord.DOWN).step());
+                    } else if (beam.direction == Coord.UP) {
+                        yield List.of(new Beam(beam.position(), Coord.LEFT).step());
+                    } else if (beam.direction == Coord.DOWN) {
+                        yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
                     } else {
-                        if (beam.direction().y() < 0) {
-                            yield List.of(new Beam(beam.position(), Coord.LEFT).step());
-                        } else {
-                            yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
-                        }
+                        throw new IllegalStateException("unknown direction: " + beam.direction());
                     }
                 }
-                default -> throw new IllegalArgumentException("Unexpected value: " + tile);
+                default -> throw new IllegalStateException("Unexpected value: " + tile);
                 };
             }).flatMap(List::stream).filter(isValid).toList();
         }
-        return (visited.stream().map(Beam::position).distinct().count());
+        return visited.stream().map(Beam::position).distinct().count();
     }
 
     private static String readInput() {
