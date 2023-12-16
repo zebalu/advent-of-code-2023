@@ -6,7 +6,7 @@ Advent of Code 2023 solutions in Java 21
 1. Solve all the tasks
 2. Write nice code
 3. Only use `java.base`
-4. Have all days as a standalone runnable Java file (So, like standing in the `aoc2023` folder, you could execute the day, like: `java src/main/java/io/github/zebalu/aoc2023/Day01.java`. This also means if you want to understand how a solution works, you only need to read __1__ file.)
+4. Have all days as a standalone runnable Java file (So, like standing in the `aoc2023` folder, you could execute the day, like: `java src/main/java/io/github/zebalu/aoc2023/days/Day01.java`. This also means if you want to understand how a solution works, you only need to read __1__ file.)
 
 ### Stretch goals
 
