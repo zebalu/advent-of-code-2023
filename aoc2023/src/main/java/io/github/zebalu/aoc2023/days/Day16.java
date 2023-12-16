@@ -1,15 +1,9 @@
 package io.github.zebalu.aoc2023.days;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.*;
+import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
 import static java.util.function.Predicate.not;
 
@@ -18,7 +12,7 @@ public class Day16 {
         String input = readInput();
         List<String> tiles = input.lines().toList();
         
-        System.out.println(countEnergized(tiles, new Beam(new Coord(0,0), Coord.RIGHT)));
+        System.out.println(countEnergized(tiles, new Beam(new Coord(0,0), Direction.RIGHT)));
         
         List<Beam> starts = collectStartBeams(tiles.size(), tiles.getFirst().length());
         System.out.println(starts.stream().parallel().mapToLong(start -> countEnergized(tiles, start)).max().orElseThrow());
@@ -27,11 +21,11 @@ public class Day16 {
     private static List<Beam> collectStartBeams(int height, int width) {
         return Stream
                 .concat(IntStream.range(0, height).mapToObj(y -> List.of(
-                                new Beam(new Coord(0, y), Coord.RIGHT),
-                                new Beam(new Coord(width - 1, y), Coord.LEFT))),
+                                new Beam(new Coord(0, y), Direction.RIGHT),
+                                new Beam(new Coord(width - 1, y), Direction.LEFT))),
                         IntStream.range(0, width).mapToObj(x -> List.of(
-                                new Beam(new Coord(x, 0), Coord.DOWN),
-                                new Beam(new Coord(x, height - 1), Coord.UP))))
+                                new Beam(new Coord(x, 0), Direction.DOWN),
+                                new Beam(new Coord(x, height - 1), Direction.UP))))
                 .flatMap(List::stream).toList();
     }
     
@@ -47,46 +41,26 @@ public class Day16 {
                 char tile = tiles.get(beam.position().y()).charAt(beam.position.x());
                 return switch (tile) {
                 case '.' -> List.of(beam.step());
-                case '|' -> {
-                    if(beam.direction.x() != 0) {
-                        yield List.of(new Beam(beam.position(), Coord.UP).step(), new Beam(beam.position(), Coord.DOWN).step());
-                    } else {
-                        yield List.of(beam.step());
-                    }
-                }
-                case '-' -> {
-                    if(beam.direction.y() != 0) {
-                        yield List.of(new Beam(beam.position(), Coord.LEFT).step(), new Beam(beam.position(), Coord.RIGHT).step());
-                    } else {
-                        yield List.of(beam.step());
-                    }
-                }
-                case '/' -> {
-                    if (beam.direction == Coord.LEFT) {
-                        yield List.of(new Beam(beam.position(), Coord.DOWN).step());
-                    } else if (beam.direction == Coord.RIGHT) {
-                        yield List.of(new Beam(beam.position(), Coord.UP).step());
-                    } else if (beam.direction == Coord.UP) {
-                        yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
-                    } else if (beam.direction == Coord.DOWN) {
-                        yield List.of(new Beam(beam.position(), Coord.LEFT).step());
-                    } else {
-                        throw new IllegalStateException("unknown direction: " + beam.direction());
-                    }
-                }
-                case '\\' -> {
-                    if (beam.direction == Coord.LEFT) {
-                        yield List.of(new Beam(beam.position(), Coord.UP).step());
-                    } else if (beam.direction == Coord.RIGHT) {
-                        yield List.of(new Beam(beam.position(), Coord.DOWN).step());
-                    } else if (beam.direction == Coord.UP) {
-                        yield List.of(new Beam(beam.position(), Coord.LEFT).step());
-                    } else if (beam.direction == Coord.DOWN) {
-                        yield List.of(new Beam(beam.position(), Coord.RIGHT).step());
-                    } else {
-                        throw new IllegalStateException("unknown direction: " + beam.direction());
-                    }
-                }
+                case '|' -> switch (beam.direction) {
+                    case Direction.LEFT, Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step(), new Beam(beam.position(), Direction.DOWN).step());
+                    case Direction.UP, Direction.DOWN -> List.of(beam.step());
+                };
+                case '-' -> switch (beam.direction) {
+                    case Direction.UP, Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step(), new Beam(beam.position(), Direction.RIGHT).step());
+                    case Direction.LEFT, Direction.RIGHT -> List.of(beam.step());
+                };
+                case '/' -> switch(beam.direction) {
+                    case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
+                    case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step());
+                    case Direction.UP -> List.of(new Beam(beam.position(), Direction.RIGHT).step());
+                    case Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step());
+                };
+                case '\\' -> switch (beam.direction){
+                    case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.UP).step());
+                    case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
+                    case Direction.UP -> List.of(new Beam(beam.position(), Direction.LEFT).step());
+                    case Direction.DOWN ->List.of(new Beam(beam.position(), Direction.RIGHT).step());
+                };
                 default -> throw new IllegalStateException("Unexpected value: " + tile);
                 };
             }).flatMap(List::stream).filter(isValid).toList();
@@ -97,20 +71,23 @@ public class Day16 {
     private static String readInput() {
         try {
             return Files.readString(Path.of("day16.txt").toAbsolutePath());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
     private record Coord(int x, int y) {
-        private static Coord LEFT = new Coord(-1,0);
-        private static Coord RIGHT = new Coord(1,0);
-        private static Coord UP = new Coord(0,-1);
-        private static Coord DOWN = new Coord(0,1);
-        Coord add(Coord other) {
-            return new Coord(x+other.x, y+other.y);
+        Coord add(Direction direction) {
+            return new Coord(x+direction.step.x, y+direction.step.y);
         }
     }
-    private record Beam(Coord position, Coord direction) {
+    private static enum Direction {
+        LEFT(new Coord(-1,0)), RIGHT(new Coord(1,0)), UP(new Coord(0,-1)), DOWN(new Coord(0,1));
+        private Coord step;
+        private Direction(Coord step) {
+            this.step=step;
+        }
+    }
+    private record Beam(Coord position, Direction direction) {
         Beam step() {
             return new Beam(position.add(direction), direction);
         }
