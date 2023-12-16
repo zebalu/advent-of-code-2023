@@ -41,31 +41,47 @@ public class Day16 {
                 char tile = tiles.get(beam.position().y()).charAt(beam.position.x());
                 return switch (tile) {
                 case '.' -> List.of(beam.step());
-                case '|' -> switch (beam.direction) {
-                    case Direction.LEFT, Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step(), new Beam(beam.position(), Direction.DOWN).step());
-                    case Direction.UP, Direction.DOWN -> List.of(beam.step());
-                };
-                case '-' -> switch (beam.direction) {
-                    case Direction.UP, Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step(), new Beam(beam.position(), Direction.RIGHT).step());
-                    case Direction.LEFT, Direction.RIGHT -> List.of(beam.step());
-                };
-                case '/' -> switch(beam.direction) {
-                    case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
-                    case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step());
-                    case Direction.UP -> List.of(new Beam(beam.position(), Direction.RIGHT).step());
-                    case Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step());
-                };
-                case '\\' -> switch (beam.direction){
-                    case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.UP).step());
-                    case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
-                    case Direction.UP -> List.of(new Beam(beam.position(), Direction.LEFT).step());
-                    case Direction.DOWN ->List.of(new Beam(beam.position(), Direction.RIGHT).step());
-                };
+                case '|' -> verticalSplit(beam);
+                case '-' -> horizontalSplit(beam);
+                case '/' -> rightTurn(beam);
+                case '\\' -> leftTurn(beam);
                 default -> throw new IllegalStateException("Unexpected value: " + tile);
                 };
             }).flatMap(List::stream).filter(isValid).toList();
         }
         return visited.stream().map(Beam::position).distinct().count();
+    }
+    
+    private static List<Beam> verticalSplit(Beam beam) {
+        return switch (beam.direction) {
+        case Direction.LEFT, Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step(), new Beam(beam.position(), Direction.DOWN).step());
+        case Direction.UP, Direction.DOWN -> List.of(beam.step());
+        };
+    }
+    
+    private static List<Beam> horizontalSplit(Beam beam) {
+        return switch (beam.direction) {
+        case Direction.UP, Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step(), new Beam(beam.position(), Direction.RIGHT).step());
+        case Direction.LEFT, Direction.RIGHT -> List.of(beam.step());
+        };
+    }
+    
+    private static List<Beam> rightTurn(Beam beam) {
+        return switch (beam.direction) {
+        case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
+        case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.UP).step());
+        case Direction.UP -> List.of(new Beam(beam.position(), Direction.RIGHT).step());
+        case Direction.DOWN -> List.of(new Beam(beam.position(), Direction.LEFT).step());
+        };
+    }
+
+    private static List<Beam> leftTurn(Beam beam) {
+        return switch (beam.direction) {
+        case Direction.LEFT -> List.of(new Beam(beam.position(), Direction.UP).step());
+        case Direction.RIGHT -> List.of(new Beam(beam.position(), Direction.DOWN).step());
+        case Direction.UP -> List.of(new Beam(beam.position(), Direction.LEFT).step());
+        case Direction.DOWN -> List.of(new Beam(beam.position(), Direction.RIGHT).step());
+        };
     }
 
     private static String readInput() {
