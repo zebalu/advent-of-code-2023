@@ -12,14 +12,14 @@ public class Day17 {
     }
 
     private static int part1(List<String> maze) {
-        return minHeatLoss(maze, 3, (a, b) -> true);
+        return minHeatLoss(maze, 3, (a, b) -> true, i -> true);
     }
 
     private static int part2(List<String> maze) {
-        return minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir());
+        return minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir(), i -> 4<= i);
     }
 
-    private static int minHeatLoss(List<String> maze, int maxLength, BiPredicate<Coord, State> nextFilter) {
+    private static int minHeatLoss(List<String> maze, int maxLength, BiPredicate<Coord, State> nextFilter, Predicate<Integer> stopFilter) {
         int height = maze.size();
         int width = maze.getFirst().length();
         Predicate<Coord> isValidCood = c -> 0 <= c.x() && 0 <= c.y() && c.x < width && c.y < height;
@@ -36,7 +36,7 @@ public class Day17 {
                             curr.nextStraight(c), curr.heatLoss() + heatCost(c, maze), curr.pos().directionOf(c)))
                     .filter(isValidState).toList();
             for (State s : nextStates) {
-                if (s.pos().equals(target)) {
+                if (s.pos().equals(target) && stopFilter.test(s.straightLength())) {
                     return s.heatLoss;
                 }
                 var costKey = s.toKey();
