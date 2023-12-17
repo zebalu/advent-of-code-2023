@@ -6,42 +6,42 @@ import java.util.function.*;
 
 public class Day17 {
     public static void main(String[] args) {
-        List<String> maze = readInput().lines().toList();
+        List<List<Integer>> maze = readInput().lines().map(l->l.chars().map(i->i-'0').boxed().toList()).toList();
         System.out.println(part1(maze));
         System.out.println(part2(maze));
     }
 
-    private static int part1(List<String> maze) {
+    private static int part1(List<List<Integer>> maze) {
         return minHeatLoss(maze, 3, (a, b) -> true, i -> true);
     }
 
-    private static int part2(List<String> maze) {
-        return minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir(), i -> 4<= i);
+    private static int part2(List<List<Integer>> maze) {
+        return minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir(), i -> 4 <= i);
     }
 
-    private static int minHeatLoss(List<String> maze, int maxLength, BiPredicate<Coord, State> nextFilter, Predicate<Integer> stopFilter) {
+    private static int minHeatLoss(List<List<Integer>> maze, int maxLength, BiPredicate<Coord, State> nextFilter, Predicate<Integer> stopFilter) {
         int height = maze.size();
-        int width = maze.getFirst().length();
-        Predicate<Coord> isValidCood = c -> 0 <= c.x() && 0 <= c.y() && c.x < width && c.y < height;
-        Predicate<State> isValidState = s -> isValidCood.test(s.pos()) && s.straightLength() <= maxLength;
+        int width = maze.getFirst().size();
+        Predicate<Coord> isValidCoord = c -> 0 <= c.x() && 0 <= c.y() && c.x < width && c.y < height;
+        Predicate<State> isValidState = s -> s.straightLength() <= maxLength;
         Coord target = new Coord(width - 1, height - 1);
-        Map<Long, Integer> bestCost = new HashMap<>();
-        Queue<State> queue = new PriorityQueue<>();
+        Map<Long, Integer> bestCost = new HashMap<>(1_000_000);
+        Queue<State> queue = new PriorityQueue<>(10_000);
         queue.add(new State(new Coord(0, 0), 0, 0, Direction.EAST));
         while (!queue.isEmpty()) {
             State curr = queue.poll();
             List<Coord> nexts = curr.pos().nexts(curr.dir());
             List<State> nextStates = nexts
-                    .stream().filter(isValidCood).filter(c -> nextFilter.test(c, curr)).map(c -> new State(c,
+                    .stream().filter(c -> isValidCoord.test(c) && nextFilter.test(c, curr)).map(c -> new State(c,
                             curr.nextStraight(c), curr.heatLoss() + heatCost(c, maze), curr.pos().directionOf(c)))
                     .filter(isValidState).toList();
             for (State s : nextStates) {
                 if (s.pos().equals(target) && stopFilter.test(s.straightLength())) {
-                    return s.heatLoss;
+                    return s.heatLoss();
                 }
-                var costKey = s.toKey();
-                if (!bestCost.containsKey(costKey) || s.heatLoss < bestCost.get(costKey)) {
-                    bestCost.put(costKey, s.heatLoss);
+                long costKey = s.toKey();
+                if (!bestCost.containsKey(costKey) || s.heatLoss() < bestCost.get(costKey)) {
+                    bestCost.put(costKey, s.heatLoss());
                     queue.add(s);
                 }
             }
@@ -57,8 +57,8 @@ public class Day17 {
         }
     }
 
-    private static int heatCost(Coord coord, List<String> maze) {
-        return Integer.parseInt("" + maze.get(coord.y()).charAt(coord.x()));
+    private static int heatCost(Coord coord, List<List<Integer>> maze) {
+        return maze.get(coord.y()).get(coord.x());
     }
 
     private enum Direction {
@@ -95,7 +95,7 @@ public class Day17 {
 
     private record State(Coord pos, int straightLength, int heatLoss, Direction dir) implements Comparable<State> {
 
-        private static final Comparator<State> COMPARATOR = Comparator.comparingLong(State::heatLoss).thenComparingInt(State::straightLength);
+        private static final Comparator<State> COMPARATOR = Comparator.comparingLong(State::heatLoss);
 
         @Override
         public int compareTo(State o) {
@@ -108,9 +108,9 @@ public class Day17 {
             }
             return 1;
         }
-        
+
         long toKey() {
-            return pos.x()*1_000_000L+pos.y()*1_000L+straightLength*10L+dir.ordinal();
+            return pos.x() * 1_000_000L + pos.y() * 1_000L + straightLength() * 10L + dir.ordinal();
         }
 
     }

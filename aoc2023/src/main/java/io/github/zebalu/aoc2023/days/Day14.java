@@ -3,6 +3,7 @@ package io.github.zebalu.aoc2023.days;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -114,18 +115,16 @@ public class Day14 {
                 cycle();
                 ++steps;
             }
-            int length = 0;
             var iterator = history.reversed().iterator();
             boolean found = false;
+            List<Set<Coord>> reversed = new ArrayList<Set<Coord>>(history.size());
             while(iterator.hasNext() && !found) {
                 var value = iterator.next();
-                ++length;
+                reversed.add(value);
                 found = value.equals(rollers);
             }
-            int remaining = (times - steps) % length;
-            for(int i=0; i<remaining; ++i) {
-                cycle();
-            }
+            int remaining = (times - steps) % reversed.size();
+            rollers = reversed.get(remaining);
         }
         
         int loadOnNorth() {
