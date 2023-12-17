@@ -7,17 +7,16 @@ import java.util.function.*;
 public class Day17 {
     public static void main(String[] args) {
         List<String> maze = readInput().lines().toList();
-        part1(maze);
-        part2(maze);
+        System.out.println(part1(maze));
+        System.out.println(part2(maze));
     }
 
-    private static void part1(List<String> maze) {
-        System.out.println(minHeatLoss(maze, 3, (a, b) -> true));
+    private static int part1(List<String> maze) {
+        return minHeatLoss(maze, 3, (a, b) -> true);
     }
 
-    private static void part2(List<String> maze) {
-        System.out
-                .println(minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir()));
+    private static int part2(List<String> maze) {
+        return minHeatLoss(maze, 10, (c, s) -> 4 <= s.straightLength() || s.pos().directionOf(c) == s.dir());
     }
 
     private static int minHeatLoss(List<String> maze, int maxLength, BiPredicate<Coord, State> nextFilter) {
@@ -26,7 +25,7 @@ public class Day17 {
         Predicate<Coord> isValidCood = c -> 0 <= c.x() && 0 <= c.y() && c.x < width && c.y < height;
         Predicate<State> isValidState = s -> isValidCood.test(s.pos()) && s.straightLength() <= maxLength;
         Coord target = new Coord(width - 1, height - 1);
-        Map<PosStepDir, Integer> psdCost = new HashMap<>();
+        Map<Long, Integer> bestCost = new HashMap<>();
         Queue<State> queue = new PriorityQueue<>();
         queue.add(new State(new Coord(0, 0), 0, 0, Direction.EAST));
         while (!queue.isEmpty()) {
@@ -40,9 +39,9 @@ public class Day17 {
                 if (s.pos().equals(target)) {
                     return s.heatLoss;
                 }
-                var psd = PosStepDir.of(s);
-                if (!psdCost.containsKey(psd) || s.heatLoss < psdCost.get(psd)) {
-                    psdCost.put(psd, s.heatLoss);
+                var costKey = s.toKey();
+                if (!bestCost.containsKey(costKey) || s.heatLoss < bestCost.get(costKey)) {
+                    bestCost.put(costKey, s.heatLoss);
                     queue.add(s);
                 }
             }
@@ -96,8 +95,7 @@ public class Day17 {
 
     private record State(Coord pos, int straightLength, int heatLoss, Direction dir) implements Comparable<State> {
 
-        private static final Comparator<State> COMPARATOR = Comparator.comparingLong(State::heatLoss)
-                .thenComparingInt(State::straightLength);
+        private static final Comparator<State> COMPARATOR = Comparator.comparingLong(State::heatLoss).thenComparingInt(State::straightLength);
 
         @Override
         public int compareTo(State o) {
@@ -110,12 +108,10 @@ public class Day17 {
             }
             return 1;
         }
-
-    }
-
-    private record PosStepDir(Coord pos, int steps, Direction dir) {
-        static PosStepDir of(State state) {
-            return new PosStepDir(state.pos, state.straightLength, state.dir);
+        
+        long toKey() {
+            return 0L+pos.x()*1_000_000L+pos.y()*1_000L+straightLength*10L+dir.ordinal();
         }
+
     }
 }
