@@ -41,7 +41,7 @@ public class Day17 {
                     return s.heatLoss;
                 }
                 var psd = PosStepDir.of(s);
-                if (!psdCost.containsKey(psd) || s.heatLoss < psdCost.get(psd)) { 
+                if (!psdCost.containsKey(psd) || s.heatLoss < psdCost.get(psd)) {
                     psdCost.put(psd, s.heatLoss);
                     queue.add(s);
                 }
@@ -60,6 +60,10 @@ public class Day17 {
 
     private static int heatCost(Coord coord, List<String> maze) {
         return Integer.parseInt("" + maze.get(coord.y()).charAt(coord.x()));
+    }
+
+    private enum Direction {
+        NORTH, EAST, SOUTH, WEST;
     }
 
     private record Coord(int x, int y) {
@@ -88,10 +92,6 @@ public class Day17 {
             }
             throw new IllegalArgumentException(this + " is equal with " + coord + " ?");
         }
-    }
-
-    private enum Direction {
-        NORTH, EAST, SOUTH, WEST;
     }
 
     private record State(Coord pos, int straightLength, int heatLoss, Direction dir) implements Comparable<State> {
