@@ -110,7 +110,7 @@ public class Day17 {
         }
         
         long toKey() {
-            return 0L+pos.x()*1_000_000L+pos.y()*1_000L+straightLength*10L+dir.ordinal();
+            return pos.x()*1_000_000L+pos.y()*1_000L+straightLength*10L+dir.ordinal();
         }
 
     }
