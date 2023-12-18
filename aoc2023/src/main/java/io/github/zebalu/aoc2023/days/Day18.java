@@ -22,7 +22,7 @@ public class Day18 {
      * The input (DigPlan) guarantees we get the points in order, but it can be clockwise, in this case the area is
      * negative.</p>
      * 
-     * <p>The formula states for n points: area = 1/2 SUM{i: 1->n}(y_i + y_[i+1]))*(x_i - x_[i+1])</p>
+     * <p>The formula states for n points: area = 1/2*SUM{i: 1->n}((y_i + y_[i+1])*(x_i - x_[i+1]))</p>
      * 
      * <p>Other additions: based on the example and part1 I could debug:</p>
      * <ol>
@@ -46,7 +46,7 @@ public class Day18 {
         }
         for (int i = 0; i < coords.size(); ++i) {
             Coord ci = coords.get(i);
-            // in case it is the last cord, the next coord is the first (start) coord.
+            // in case it is the last coord, the next coord is the first (start) coord.
             Coord cn = coords.get((i + 1) % coords.size());
             // one of the arguments must be long, so I won't have overflow
             area += ((long)ci.y + cn.y) * (ci.x - cn.x);
