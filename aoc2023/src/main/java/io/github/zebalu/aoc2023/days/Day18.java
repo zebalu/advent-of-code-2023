@@ -31,6 +31,14 @@ public class Day18 {
      * <li> I <b>MUST</b> calculate in longs, not to get overflow. </li>
      * </ol>
      * 
+     * <p><i>BTW:</i> <b>Where are integer division off by one errors?</b> <br />
+     * <b>We won't have any.</b> Line is a ring, every step we take in on direction is taken to the other as well --> even.
+     * All lines are parallel with one of the ordinates. When we work with neighbouring points, it is either X has 
+     * changed or Y has changed. If Y has changed, the formula gives 0 as multiplier (for X_i - X_(i+1)), so it is even.
+     * When X has changes Y is doubled (Y_i + Y_(i+1)), which gives an even number after multiplication. <br />
+     * <b>All area parts are even, so the sum is even as well.</b>
+     * </p>
+     * 
      * @param instructions -- list of {@link DigInstruction} to calculate with
      * @return the calculated area (with the line included) 
      */
