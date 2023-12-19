@@ -136,7 +136,6 @@ public class Day19 {
                                     after.add(r);
                                 }
                             }
-                                
                         } else {
                             before.add(cuted.getFirst());
                             after.add(cuted.getLast());
@@ -247,11 +246,11 @@ public class Day19 {
                         if(operator == '<') {
                             return List.of(this);
                         } else {
-                            return List.of(new IntRange(min, min), new IntRange(at+1, max));
+                            return List.of(new IntRange(min, min), new IntRange(min+1, max));
                         }
                     } else {
                         if(operator == '<') {
-                            return List.of(new IntRange(min, at-1), new IntRange(max, max));
+                            return List.of(new IntRange(min, max-1), new IntRange(max, max));
                         } else {
                             return List.of(this);
                         }
