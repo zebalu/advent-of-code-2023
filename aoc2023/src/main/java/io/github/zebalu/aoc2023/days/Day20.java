@@ -54,7 +54,7 @@ public class Day20 {
         if (b == 0) {
             return a;
         } else {
-            return (gcf(b, a % b));
+            return gcf(b, a % b);
         }
     }
 
