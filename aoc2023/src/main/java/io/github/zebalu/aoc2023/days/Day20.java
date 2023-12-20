@@ -1,13 +1,7 @@
 package io.github.zebalu.aoc2023.days;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.nio.file.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -71,6 +65,12 @@ public class Day20 {
     }
 
     private record Counter(AtomicLong lowCounter, AtomicLong highCounter) {
+        void count(Pulse pulse) {
+            switch(pulse) {
+            case LOW -> lowCounter.incrementAndGet();
+            case HIGH -> highCounter.incrementAndGet();
+            }
+        }
     }
 
     private static class Node {
@@ -133,26 +133,23 @@ public class Day20 {
     }
 
     private record Machine(Map<String, Node> setup, Counter counter) {
+        private static final String STOP_NODE = "rx";
         boolean push() {
             Queue<Message> messageQueue = new LinkedList<>();
             counter.lowCounter.incrementAndGet();
             messageQueue.add(new Message("button", Node.BROADCASTER, Pulse.LOW));
             while (!messageQueue.isEmpty()) {
                 Message curr = messageQueue.poll();
-                if (setup.containsKey(curr.target())) {
-                    var nexts = setup.get(curr.target()).recieve(curr.from(), curr.pulse());
-                    nexts.forEach(msg -> {
-                        if (msg.pulse() == Pulse.LOW) {
-                            counter.lowCounter.incrementAndGet();
-                        } else {
-                            counter.highCounter.incrementAndGet();
-                        }
-                        messageQueue.add(msg);
-                    });
-                }
-                if (curr.target.equals("rx") && curr.pulse == Pulse.LOW) {
+                if (curr.target.equals(STOP_NODE) && curr.pulse == Pulse.LOW) {
                     return true;
                 }
+                setup.computeIfPresent(curr.target, (key, node)->{
+                    node.recieve(curr.from(), curr.pulse()).forEach(msg -> {
+                        counter.count(msg.pulse());
+                        messageQueue.add(msg);
+                    });
+                    return node;
+                });
             }
             return false;
         }
