@@ -41,14 +41,14 @@ public class Day20 {
     }
 
     private static long lcm(long a, long b) {
-        return a / gcf(a, b) * b;
+        return a / gcd(a, b) * b;
     }
 
-    private static long gcf(long a, long b) {
+    private static long gcd(long a, long b) {
         if (b == 0) {
             return a;
         } else {
-            return gcf(b, a % b);
+            return gcd(b, a % b);
         }
     }
 
