@@ -13,41 +13,37 @@ import java.util.stream.Collectors;
 
 public class Day20 {
     public static void main(String[] args) {
-        String input = readInput();
-        part1(input);
-        part2(input);
+        Machine machine = Machine.build(readInput().lines().map(Node::parse).toList());
+        System.out.println(part1(machine));
+        machine.reset();
+        System.out.println(part2(machine));
     }
 
-    private static void part1(String input) {
-        var nodes = input.lines().map(Node::parse).toList();
-        Machine machine = Machine.build(nodes);
+    private static long part1(Machine machine) {
         for (int i = 0; i < 1000; ++i) {
             machine.push();
         }
-        System.out.println(machine.count());
+        return machine.count();
     }
 
-    private static void part2(String input) {
-        var nodes = input.lines().map(Node::parse).toList();
-        long res = 1L;
-        Machine machine = Machine.build(nodes);
-        var orig = new ArrayList<>(machine.setup.get(Node.BROADCASTER).outputs);
-        for (String s : orig) {
-            nodes = input.lines().map(Node::parse).toList();
-            machine = Machine.build(nodes);
-            var broadc = machine.setup.get(Node.BROADCASTER);
-            var toRx = machine.setup.entrySet().stream().filter(e -> e.getValue().outputs.contains("rx")).findAny()
-                    .orElseThrow().getValue();
-            toRx.inputs.keySet().forEach(k -> toRx.inputs.put(k, Pulse.HIGH));
-            broadc.outputs.clear();
-            broadc.outputs.add(s);
+    private static long part2(Machine machine) {
+        var broadcaster = machine.setup.get(Node.BROADCASTER);
+        var originalOutputs = broadcaster.outputs;
+        var toRxSink = machine.setup.entrySet().stream().filter(e -> e.getValue().outputs.contains("rx")).findAny()
+                .orElseThrow().getValue();
+        long result = 1L;
+        for (String s : originalOutputs) {
+            toRxSink.inputs.keySet().forEach(k -> toRxSink.inputs.put(k, Pulse.HIGH));
+            broadcaster.outputs = List.of(s);
             long counter = 1L;
             while (!machine.push()) {
                 ++counter;
             }
-            res = lcm(res, counter);
+            machine.reset();
+            result = lcm(result, counter);
         }
-        System.out.println(res);
+        broadcaster.outputs = originalOutputs;
+        return result;
     }
 
     private static long lcm(long a, long b) {
@@ -129,6 +125,11 @@ public class Day20 {
             }
             return notified;
         }
+        
+        void reset() {
+            onOff = false;
+            inputs.keySet().forEach(k->inputs.put(k, Pulse.LOW));
+        }
     }
 
     private record Machine(Map<String, Node> setup, Counter counter) {
@@ -158,6 +159,12 @@ public class Day20 {
 
         long count() {
             return counter.lowCounter.get() * counter.highCounter.get();
+        }
+        
+        void reset() {
+            counter.lowCounter().set(0);
+            counter.highCounter().set(0);
+            setup.values().forEach(Node::reset);
         }
 
         static Machine build(List<Node> nodes) {
