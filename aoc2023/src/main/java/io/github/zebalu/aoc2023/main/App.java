@@ -32,6 +32,8 @@ import io.github.zebalu.aoc2023.days.Day17;
 import io.github.zebalu.aoc2023.days.Day18;
 import io.github.zebalu.aoc2023.days.Day19;
 import io.github.zebalu.aoc2023.days.Day20;
+import io.github.zebalu.aoc2023.days.Day21;
+import io.github.zebalu.aoc2023.days.Day22;
 
 public class App {
     
@@ -67,6 +69,8 @@ public class App {
         exec(new DisplayData(18, "Lavaduct Lagoon", Day18::main));
         exec(new DisplayData(19, "Aplenty", Day19::main));
         exec(new DisplayData(20, "Pulse Propagation", Day20::main));
+        exec(new DisplayData(21, "Step Counter", Day21::main));
+        exec(new DisplayData(22, "Sand Slabs", Day22::main));
         Instant end = Instant.now();
         System.out.println("so far:\t"+Duration.between(start, end).toMillis()+" ms...");
     }
