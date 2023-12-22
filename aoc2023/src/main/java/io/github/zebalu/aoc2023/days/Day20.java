@@ -33,10 +33,10 @@ public class Day20 {
             while (!machine.push()) {
                 ++counter;
             }
+            broadcaster.outputs = originalOutputs;
             machine.reset();
             result = lcm(result, counter);
         }
-        broadcaster.outputs = originalOutputs;
         return result;
     }
 
@@ -45,11 +45,7 @@ public class Day20 {
     }
 
     private static long gcd(long a, long b) {
-        if (b == 0) {
-            return a;
-        } else {
-            return gcd(b, a % b);
-        }
+        return b == 0 ? a : gcd(b, a % b);
     }
 
     private static String readInput() {
@@ -84,9 +80,9 @@ public class Day20 {
         static Node parse(String line) {
             Node result = new Node();
             var parts = line.split(" -> ");
-            if (parts[0].equals("broadcaster")) {
+            if (parts[0].equals(BROADCASTER)) {
                 result.type = '?';
-                result.name = parts[0];
+                result.name = BROADCASTER;
             } else {
                 result.type = parts[0].charAt(0);
                 result.name = parts[0].substring(1);
@@ -104,26 +100,25 @@ public class Day20 {
         }
 
         List<Message> recieve(String from, Pulse pulse) {
-            List<Message> notified = new ArrayList<>();
-            switch (type) {
+            return switch (type) {
             case '%' -> {
-                if (pulse == Pulse.LOW) {
-                    onOff = !onOff;
-                    outputs.stream().map(s -> new Message(name, s, onOff ? Pulse.HIGH : Pulse.LOW))
-                            .forEach(notified::add);
-                }
+                yield switch(pulse) {
+                case LOW -> { onOff = !onOff; yield forward(onOff ? Pulse.HIGH : Pulse.LOW); }
+                case HIGH -> List.of();
+                };
             }
             case '&' -> {
                 inputs.put(from, pulse);
                 boolean allHigh = inputs.values().stream().allMatch(p -> p == Pulse.HIGH);
-                outputs.stream().map(s -> new Message(name, s, allHigh ? Pulse.LOW : Pulse.HIGH))
-                        .forEach(notified::add);
+                yield forward(allHigh ? Pulse.LOW : Pulse.HIGH);
             }
-            case '?' -> {
-                outputs.stream().map(s -> new Message(name, s, pulse)).forEach(notified::add);
-            }
-            }
-            return notified;
+            case '?' -> forward(pulse);
+            default -> throw new IllegalStateException("unkown node type: " + type);
+            };
+        }
+        
+        private List<Message> forward(Pulse pulse) {
+            return outputs.stream().map(s -> new Message(name, s, pulse)).toList();
         }
         
         void reset() {
