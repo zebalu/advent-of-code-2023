@@ -1,50 +1,20 @@
 package io.github.zebalu.aoc2023.days;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
+import java.nio.file.*;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.*;
 
 public class Day23 {
+    
     public static void main(String[] args) {
-        String input = readInput(); //example; //readInput();
-        System.out.println(input);
-        List<String> maze =  input.lines().toList();
+        var maze = readInput().lines().toList();
         Coord start = new Coord(1,0);
-        Coord target = new Coord(maze.getLast().length()-2, maze.size()-1);
-        System.out.println(longestPath(maze, start, target));
+        Coord target = new Coord(maze.size()-2, maze.size()-1);
+        var longest = longestPathLength(maze, start, target, (m,n)->n.part1Neighbours(m), n->true);
+        System.out.println(longest);
         WeightedGraph wg = new WeightedGraph(maze, start, target);
         System.out.println(wg.longestPath(start, target));
-    }
-    
-    private static long longestPath(List<String> maze, Coord start, Coord target) {
-        Queue<StepCount> queue = new PriorityQueue<>(StepCount.LONGEST_COMPARTOR);
-        Map<Coord, Integer> steps = new HashMap<>();
-        queue.add(new StepCount(start, null, 0));;
-        steps.put(start, 0);
-        long longest = 0L;
-        while(!queue.isEmpty()) {
-            StepCount at = queue.poll();
-            int nextCount = at.count()+1;
-            at.coord().next(maze).stream().filter(n->!n.equals(at.prev) && n.isValid(maze) && (!steps.containsKey(n)||steps.get(n) < nextCount) &&n.extract(maze) != '#').forEach(n->{
-                queue.add(new StepCount(n, at.coord(), nextCount));
-                steps.put(n, nextCount);
-            });
-            if(target.equals(at.coord())) {
-                longest = Math.max(longest, at.count());
-            }
-        }
-        return longest;
     }
     
     private static String readInput() {
@@ -55,241 +25,178 @@ public class Day23 {
         }
     }
     
-    record Coord(int x, int y) {
-        boolean isValid(List<String> maze) {
-            return 0<=x && 0 <= y && x<maze.getFirst().length() && y < maze.size();
+    private static SequencedSet<Coord> longestPath(List<String> maze, Coord start, Coord target, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
+        SequencedSet<Coord> result = new LinkedHashSet<>();
+        Stack<SequencedSet<Coord>> stack = new Stack<>();
+        stack.add(new LinkedHashSet<>(Set.of(start)));
+        while(!stack.isEmpty()) {
+            SequencedSet<Coord> curr = stack.pop();
+            if(target.equals(curr.getLast())) {
+                if (result.size()<curr.size()) {
+                    result = curr;
+                }
+            } else {
+                nextList.apply(maze, curr.getLast()).stream().filter(n->filter.test(n) && !curr.contains(n)).forEach(n->{
+                    var next = new LinkedHashSet<>(curr);
+                    next.add(n);
+                    stack.push(next);
+                });
+            }
         }
+        return result;
+    }
+    
+    private static int longestPathLength(List<String> maze, Coord start, Coord target, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
+        return longestPath(maze, start, target, nextList, filter).size()-1;
+    }
+
+    private record Coord(int x, int y) {
         char extract(List<String> maze) {
             return maze.get(y).charAt(x);
         }
-        List<Coord> neighbours() {
-            return List.of(new Coord(x-1, y), new Coord(x+1, y), new Coord (x, y-1), new Coord(x, y+1));
+        
+        char extractAny(List<String> maze) {
+            if(y<0 || x<0 || maze.size()<y || maze.getFirst().length()<=x) {
+                return '#';
+            }
+            return extract(maze);
         }
-        List <Coord> next(List<String> maze) {
-            return switch(extract(maze)) {
-            case '^' -> List.of(new Coord(x, y-1));
-            case 'v' -> List.of(new Coord(x, y+1));
-            case '>' -> List.of(new Coord(x+1, y));
-            case '<' -> List.of(new Coord(x-1, y));
-            case '.' -> neighbours();
-            default -> throw new IllegalStateException("can not start from: "+extract(maze));
-            };
+        
+        Coord north() {
+            return new Coord(x,y-1);
         }
-    }
-    
-    record StepCount(Coord coord, Coord prev, int count) {
-        static Comparator<StepCount> LONGEST_COMPARTOR = Comparator.comparingInt(StepCount::count).reversed();
-    }
-    
-    record StepCount2(Coord coord, Set<Coord> prevs, int count) {
-        static Comparator<StepCount2> LONGEST_COMPARTOR = Comparator.comparingInt(StepCount2::count).reversed();
+        
+        Coord south() {
+            return new Coord(x,y+1);
+        }
+        
+        Coord west() {
+            return new Coord(x-1,y);
+        }
+        
+        Coord east() {
+            return new Coord(x+1,y);
+        }
+        
+        List<Coord> part1Neighbours(List<String> maze) {
+            List<Coord> result = new ArrayList<>();
+            switch(extract(maze)) {
+            case '.' -> {
+                appendIfMatch(result, maze, north(), '^');
+                appendIfMatch(result, maze, south(), 'v');
+                appendIfMatch(result, maze, east(), '>');
+                appendIfMatch(result, maze, west(), '<');
+            }
+            case 'v' -> result.add(south());
+            case '^' -> result.add(north());
+            case '<' -> result.add(west());
+            case '>' -> result.add(east());
+            case '#' -> throw new IllegalStateException("can not stand here: "+this);
+            }
+            return result;            
+        }
+        
+        List<Coord> part2Neighbours(List<String> maze) {
+            List<Coord> result = new ArrayList<>();
+            switch(extract(maze)) {
+            case '#' -> throw new IllegalStateException("can not stand here: "+this);
+            default -> {
+                appendIfNotMatch(result, maze, north(), '#');
+                appendIfNotMatch(result, maze, south(), '#');
+                appendIfNotMatch(result, maze, east(), '#');
+                appendIfNotMatch(result, maze, west(), '#');
+            }
+            }
+            return result;            
+        }
+        
+        private static void appendIfMatch(List<Coord> collector, List<String> maze, Coord coord, char accepted) {
+            char at = coord.extractAny(maze);
+            if(at == '.' || at == accepted) {
+                collector.add(coord);
+            }
+        }
+        
+        private static void appendIfNotMatch(List<Coord> collector, List<String> maze, Coord coord, char rejected) {
+            char at = coord.extractAny(maze);
+            if(at == '.' || at != rejected) {
+                collector.add(coord);
+            }
+        }
     }
     
     private static class WeightedGraph {
-        private Set<Coord> junktions = new LinkedHashSet<>();
-        private Map<Coord, Set<Coord>> directConnections = new LinkedHashMap<>();
-        private Map<CostPair, Integer> costs = new HashMap<>();
-        WeightedGraph(List<String> maze, Coord start, Coord target) {
-            junktions.add(start);
-            junktions.add(target);
-            for(int y=0; y<maze.size(); ++y) {
+        private SequencedSet<Coord> forks = new LinkedHashSet<>();
+        private SequencedMap<Coord, Integer> forkIds = new LinkedHashMap<>();
+        private Map<Integer, BitSet> connections = new LinkedHashMap<Integer, BitSet>();
+        private Map<Edge, Integer> costs = new LinkedHashMap<>();
+        
+        public WeightedGraph(List<String> maze, Coord start, Coord target) {
+            forks.add(start);
+            int id = 0;
+            forkIds.put(start, id);
+            for(int y=1; y<maze.size()-1; ++y) {
                 String line = maze.get(y);
-                for(int x=0; x<line.length(); ++x) {
+                for(int x=1; x<line.length()-1; ++x) {
                     char ch = line.charAt(x);
-                    if(ch!='#') {
-                        Coord at = new Coord(x,y);
-                        long validNextSteps = at.neighbours().stream().filter(n->n.isValid(maze) && n.extract(maze)!='#').count();
-                        if(validNextSteps>2) {
-                            junktions.add(at);
+                    if(ch != '#') {
+                        Coord c = new Coord(x,y);
+                        if(c.part2Neighbours(maze).size()>2) {
+                            forks.add(c);
+                            forkIds.put(c, ++id);
                         }
                     }
                 }
             }
-            fillDirectConnections(maze);
-        }
-        
-        private void fillDirectConnections(List<String> maze) {
-            List<Coord> junktionList = new ArrayList<>(junktions);
-            for(int i=0; i<junktionList.size(); ++i) {
-                Coord from = junktionList.get(i);
-                Set<Coord> available = new HashSet<>();
-                for(int j=i+1; j<junktionList.size(); ++j) {
-                    Coord to = junktionList.get(j);
-                    CostPair cp1 = new CostPair(from, to);
-                    CostPair cp2 = new CostPair(to, from);
-                    int path = longestMazePathWithoutOtherJunktions(maze, junktionList.get(i), junktionList.get(j));
-                    if(path>0) {
-                        available.add(to);
-                        costs.put(cp1, path);
-                        costs.put(cp2, path);
-                        Set<Coord> toSet = directConnections.computeIfAbsent(to, k->new HashSet<>());
-                        toSet.add(from);
-                    }
-                }
-                var stored = directConnections.computeIfAbsent(from, k->new HashSet<>());
-                stored.addAll(available);
+            forks.add(target);
+            forkIds.put(target, ++id);
+            for(int i=0; i<forkIds.size(); ++i) {
+                connections.put(i, new BitSet(forks.size()));
             }
-        }
-        
-        private int longestMazePathWithoutOtherJunktions(List<String> maze, Coord start, Coord target) {
-            Queue<StepCount2> queue = new PriorityQueue<>(StepCount2.LONGEST_COMPARTOR);
-            Map<Coord, Integer> steps = new HashMap<>();
-            queue.add(new StepCount2(start, Set.of(start), 0));;
-            steps.put(start, 0);
-            int longest = -1;
-            while(!queue.isEmpty()) {
-                StepCount2 at = queue.poll();
-                int nextCount = at.count()+1;
-                if(target.equals(at.coord())) {
-                    longest = Math.max(longest, at.count());
-                } else {
-                at.coord().neighbours().stream().filter(n->!at.prevs().contains(n) && n.isValid(maze) && n.extract(maze) != '#' && (!junktions.contains(n) || target.equals(n))
-                        &&(!steps.containsKey(n) || steps.get(n)<nextCount)).forEach(n->{
-                    Set<Coord> nps = new HashSet<>(at.prevs);
-                    nps.add(at.coord);
-                    queue.add(new StepCount2(n, nps, nextCount));
-                    steps.put(n, nextCount);
-                });
-                }
-            }
-            return longest;
-        }
-        
-        long longestPath(Coord start, Coord target) {
-            Queue<StepCount2> queue = new LinkedList<>(); //new PriorityQueue<>(StepCount2.LONGEST_COMPARTOR);
-            Map<Coord, Integer> steps = new HashMap<>();
-            queue.add(new StepCount2(start, Set.of(start), 0));;
-            steps.put(start, 0);
-            long longest = -1L;
-            while(!queue.isEmpty()) {
-                StepCount2 at = queue.poll();
-                directConnections.get(at.coord()).stream().filter(n->!at.prevs().contains(n)
-                        &&(!steps.containsKey(n) || steps.get(n) < at.count+costs.get(new CostPair(at.coord, n)))).forEach(n->{
-                    Set<Coord> nps = new HashSet<>(at.prevs);
-                    nps.add(at.coord);
-                    queue.add(new StepCount2(n, nps, at.count+costs.get(new CostPair(at.coord, n))));
-                    //steps.put(n, at.count+costs.get(new CostPair(at.coord, n)));
-                });
-                if(target.equals(at.coord())) {
-                    longest = Math.max(longest, at.count());
-                    //System.out.println("at target: "+longest);
-                }
-            }
-            return longest;
-        }
-        
-        private record CostPair(Coord from, Coord to) {
-            
-        }
-        
-    }
-    /*
-    private static class WeightedGraph1 {
-        private Set<Coord> junktions = new LinkedHashSet<>();
-        private Map<Coord, Set<Coord>> directConnections = new LinkedHashMap<>();
-        private Map<CostPair, Integer> costs = new HashMap<>();
-        WeightedGraph1(List<String> maze, Coord start, Coord target) {
-            junktions.add(start);
-            junktions.add(target);
-            for(int y=0; y<maze.size(); ++y) {
-                String line = maze.get(y);
-                for(int x=0; x<line.length(); ++x) {
-                    char ch = line.charAt(x);
-                    if(ch!='#') {
-                        Coord at = new Coord(x,y);
-                        long validNextSteps = at.neighbours().stream().filter(n->n.isValid(maze) && n.extract(maze)!='#').count();
-                        if(validNextSteps>2) {
-                            junktions.add(at);
+            for(Entry<Coord, Integer> iEntry: forkIds.entrySet()) {
+                for(Entry<Coord, Integer> jEntry: forkIds.entrySet()) {
+                    if(iEntry.getValue() < jEntry.getValue()) {
+                        int length = longestPathLength(maze, iEntry.getKey(), jEntry.getKey(), (m,n)->n.part2Neighbours(m), c->!forks.contains(c) || c.equals(jEntry.getKey()));
+                        if(length > 0) {
+                            connections.get(iEntry.getValue()).set(jEntry.getValue());
+                            connections.get(jEntry.getValue()).set(iEntry.getValue());
+                            costs.put(new Edge(iEntry.getValue(), jEntry.getValue()), length);
+                            costs.put(new Edge(jEntry.getValue(), iEntry.getValue()), length);
                         }
                     }
                 }
             }
-            for(var c: junktions) {
-                System.out.println("junktion:\t"+c);
-            }
-            fillDirectConnections(maze);
-            for(var dc: directConnections.entrySet()) {
-                System.out.println("dc:\t"+dc);
-            }
-            System.out.println("sdc:\t"+directConnections.get(start));
-            System.out.println("tdc:\t"+directConnections.get(target));
         }
         
-        private void fillDirectConnections(List<String> maze) {
-            List<Coord> junktionList = new ArrayList<>(junktions);
-            for(int i=0; i<junktionList.size(); ++i) {
-                Coord from = junktionList.get(i);
-                Set<Coord> available = new HashSet<>();
-                for(int j=i+1; j<junktionList.size(); ++j) {
-                    Coord to = junktionList.get(j);
-                    CostPair cp1 = new CostPair(from, to);
-                    CostPair cp2 = new CostPair(to, from);
-                    int path = longestMazePathWithoutOtherJunktions(maze, junktionList.get(i), junktionList.get(j));
-                    if(path>0) {
-                        available.add(to);
-                        costs.put(cp1, path);
-                        costs.put(cp2, path);
-                        Set<Coord> toSet = directConnections.computeIfAbsent(to, k->new HashSet<>());
-                        toSet.add(from);
+        int longestPath(Coord start, Coord target) {
+            int startId = forkIds.get(start);
+            int targetId = forkIds.get(target);
+            Stack<Step> stack = new Stack<>();
+            BitSet startBs = new BitSet(forks.size());
+            startBs.set(forkIds.get(start));
+            stack.add(new Step(startId, startBs, 0));
+            int longest = 0;
+            while(!stack.isEmpty()) {
+                Step curr = stack.pop();
+                BitSet cons = connections.get(curr.last);
+                for(int i=0; i<cons.size(); ++i) {
+                    if(cons.get(i) && !curr.history.get(i)) {
+                        int newCost = curr.length + costs.get(new Edge(curr.last, i));
+                        if(i == targetId && longest < newCost ) {
+                            longest = newCost;
+                        } else {
+                            BitSet nextSet = (BitSet)curr.history.clone();
+                            nextSet.set(i);
+                            Step nextStep = new Step(i, nextSet, newCost);
+                            stack.push(nextStep);
+                        }
                     }
                 }
-                var stored = directConnections.computeIfAbsent(from, k->new HashSet<>());
-                stored.addAll(available);
-            }
-        }
-        
-        private int longestMazePathWithoutOtherJunktions(List<String> maze, Coord start, Coord target) {
-            Queue<StepCount2> queue = new PriorityQueue<>(StepCount2.LONGEST_COMPARTOR);
-            Map<Coord, Integer> steps = new HashMap<>();
-            queue.add(new StepCount2(start, Set.of(start), 0));;
-            steps.put(start, 0);
-            int longest = -1;
-            while(!queue.isEmpty()) {
-                StepCount2 at = queue.poll();
-                int nextCount = at.count()+1;
-                if (target.equals(at.coord())) {
-                    longest = Math.max(longest, at.count());
-                } else {
-                    at.coord().neighbours().stream().filter(n -> !at.prevs().contains(n) && n.isValid(maze)
-                            && n.extract(maze) != '#' && (!junktions.contains(n) || target.equals(n))
-                            && (!steps.containsKey(n) || steps.get(n)<nextCount)).forEach(n -> {
-                                Set<Coord> nps = new HashSet<>(at.prevs);
-                                nps.add(at.coord);
-                                queue.add(new StepCount2(n, nps, nextCount));
-                                steps.put(n, nextCount);
-                            });
-                }
             }
             return longest;
         }
         
-        long longestPath(Coord start, Coord target) {
-            Queue<StepCount2> queue = new LinkedList<>();//new PriorityQueue<>(StepCount.LONGEST_COMPARTOR);
-            Map<Coord, Integer> steps = new HashMap<>();
-            queue.add(new StepCount2(start, Set.of(start), 0));;
-            steps.put(start, 0);
-            long longest = -1L;
-            while(!queue.isEmpty()) {
-                StepCount2 at = queue.poll();
-                directConnections.get(at.coord()).stream().filter(n->!at.prevs().contains(n)
-                        && (!steps.containsKey(n) || steps.get(n)<(at.count+costs.get(new CostPair(at.coord, n))))).forEach(n->{
-                    Set<Coord> nps = new HashSet<>(at.prevs);
-                    nps.add(at.coord);
-                    queue.add(new StepCount2(n, nps, at.count+costs.get(new CostPair(at.coord, n))));
-                    steps.put(n, at.count+costs.get(new CostPair(at.coord, n)));
-                });
-                if(target.equals(at.coord())) {
-                    longest = Math.max(longest, at.count());
-                    System.out.println("at target: "+longest);
-                }
-            }
-            return longest;
-        }
-        
-        private record CostPair(Coord from, Coord to) {
-            
-        }
-        
+        private record Step(int last, BitSet history, int length) {}
+        private record Edge(int from, int to) {}
     }
-    */
 }
