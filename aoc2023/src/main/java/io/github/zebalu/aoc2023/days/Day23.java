@@ -110,6 +110,11 @@ public class Day23 {
             return result;            
         }
         
+        @Override
+        public int hashCode() {
+            return x*10_000+y;
+        }
+        
         private static void appendIfMatch(List<Coord> collector, List<String> maze, Coord coord, char accepted) {
             char at = coord.extractAny(maze);
             if(at == '.' || at == accepted) {
@@ -175,28 +180,33 @@ public class Day23 {
             BitSet startBs = new BitSet(forks.size());
             startBs.set(forkIds.get(start));
             stack.add(new Step(startId, startBs, 0));
-            int longest = 0;
+            int[] longest = new int[] {0};
             while(!stack.isEmpty()) {
                 Step curr = stack.pop();
                 BitSet cons = connections.get(curr.last);
-                for(int i=0; i<cons.size(); ++i) {
-                    if(cons.get(i) && !curr.history.get(i)) {
+                cons.stream().forEach(i -> {
+                    if (cons.get(i) && !curr.history.get(i)) {
                         int newCost = curr.length + costs.get(new Edge(curr.last, i));
-                        if(i == targetId && longest < newCost ) {
-                            longest = newCost;
+                        if (i == targetId && longest[0] < newCost) {
+                            longest[0] = newCost;
                         } else {
-                            BitSet nextSet = (BitSet)curr.history.clone();
+                            BitSet nextSet = (BitSet) curr.history.clone();
                             nextSet.set(i);
                             Step nextStep = new Step(i, nextSet, newCost);
                             stack.push(nextStep);
                         }
                     }
-                }
+                });
             }
-            return longest;
+            return longest[0];
         }
         
         private record Step(int last, BitSet history, int length) {}
-        private record Edge(int from, int to) {}
+        private record Edge(int from, int to) {
+            @Override
+            public int hashCode() {
+                return from*10_000+to;
+            }
+        }
     }
 }
