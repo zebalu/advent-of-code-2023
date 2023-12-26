@@ -1,9 +1,12 @@
 package io.github.zebalu.aoc2023.days;
 
+import java.math.*;
 import java.nio.file.*;
 import java.util.*;
 
 public class Day24 {
+    private static final int PRECISION_100 = 100;
+
     public static void main(String[] args) {
         List<Hail> hails = readInput().lines().map(Hail::read).toList();
         System.out.println(part1(hails));
@@ -17,12 +20,12 @@ public class Day24 {
     private static long part2(List<Hail> hails) {
         // for the details, please find: https://github.com/DeadlyRedCube/AdventOfCode/blob/1f9d0a3e3b7e7821592244ee51bce5c18cf899ff/2023/AOC2023/D24.h#L66-L294
         // explains, how to get linear equation system correctly
-        var m = createLinearMatrix(find3UsableHails(hails));
-        solve(m);
-        long x = (long)m[0][6];
-        long y = (long)m[1][6];
-        long z = (long)m[2][6];
-        return x+y+z;
+        var m2 = createBDLinearMatrix(find3UsableHails(hails));
+        solve(m2);
+        var x2 = m2[0][6];
+        var y2 = m2[1][6];
+        var z2 = m2[2][6];
+        return x2.add(y2).add(z2).setScale(0, RoundingMode.HALF_EVEN).longValue();
     }
     
     private static String readInput() {
@@ -50,8 +53,7 @@ public class Day24 {
         return count;
     }
     
-    private static List<Hail> find3UsableHails(List<Hail> hailsOrig) {
-        var hails = hailsOrig.stream().sorted(Comparator.comparingLong(h->h.velocity.x)).toList();
+    private static List<Hail> find3UsableHails(List<Hail> hails) {
         List<Hail> result = new ArrayList<>();
         for(int aInd = 0; aInd < hails.size() - 2 && result.size() < 3; ++aInd) {
             Hail a = hails.get(aInd);
@@ -75,48 +77,51 @@ public class Day24 {
         return result;
     }
     
-    private static double[][] createLinearMatrix(List<Hail> hails) {
+    private static BigDecimal[][] createBDLinearMatrix(List<Hail> hails) {
         if(hails.size() != 3) {
             throw new IllegalArgumentException("It can only work with 3 hails; got: "+hails.size());
         }
-        Coord ap = hails.get(0).position;
-        Coord av = hails.get(0).velocity;
-        Coord bp = hails.get(1).position;
-        Coord bv = hails.get(1).velocity;
-        Coord cp = hails.get(2).position;
-        Coord cv = hails.get(2).velocity;
+        
+        BigDecimal zero = BigDecimal.ZERO;
+        
+        BDCoord ap = BDCoord.fromCoord(hails.get(0).position);
+        BDCoord av = BDCoord.fromCoord(hails.get(0).velocity);
+        BDCoord bp = BDCoord.fromCoord(hails.get(1).position);
+        BDCoord bv = BDCoord.fromCoord(hails.get(1).velocity);
+        BDCoord cp = BDCoord.fromCoord(hails.get(2).position);
+        BDCoord cv = BDCoord.fromCoord(hails.get(2).velocity);
 // @formatter: off
-        double[][] result = {
-                {av.y-bv.y, -(av.x-bv.x), 0.0, -(ap.y-bp.y), ap.x-bp.x, 0.0, (bp.y*bv.x - bp.x*bv.y)-(ap.y*av.x-ap.x*av.y)},
-                {av.y-cv.y, -(av.x-cv.x), 0.0, -(ap.y-cp.y), ap.x-cp.x, 0.0, (cp.y*cv.x - cp.x*cv.y)-(ap.y*av.x-ap.x*av.y)},
-                {-(av.z-bv.z), 0.0, av.x-bv.x, ap.z-bp.z, 0.0, -(ap.x-bp.x), (bp.x*bv.z - bp.z*bv.x)-(ap.x*av.z-ap.z*av.x)},
-                {-(av.z-cv.z), 0.0, av.x-cv.x, ap.z-cp.z, 0.0, -(ap.x-cp.x), (cp.x*cv.z - cp.z*cv.x)-(ap.x*av.z-ap.z*av.x)},
-                {0.0, av.z-bv.z, -(av.y-bv.y), 0.0, -(ap.z-bp.z), ap.y-bp.y, (bp.z*bv.y - bp.y*bv.z)-(ap.z*av.y-ap.y*av.z)},
-                {0.0, av.z-cv.z, -(av.y-cv.y), 0.0, -(ap.z-cp.z), ap.y-cp.y, (cp.z*cv.y - cp.y*cv.z)-(ap.z*av.y-ap.y*av.z)}
+        BigDecimal[][] result = {
+                {av.y.subtract(bv.y),          av.x.subtract(bv.x).negate(), zero,                         ap.y.subtract(bp.y).negate(), ap.x.subtract(bp.x),          zero,                         bp.y.multiply(bv.x).subtract(bp.x.multiply(bv.y)).subtract(ap.y.multiply(av.x).subtract(ap.x.multiply(av.y)))},
+                {av.y.subtract(cv.y),          av.x.subtract(cv.x).negate(), zero,                         ap.y.subtract(cp.y).negate(), ap.x.subtract(cp.x),          zero,                         cp.y.multiply(cv.x).subtract(cp.x.multiply(cv.y)).subtract(ap.y.multiply(av.x).subtract(ap.x.multiply(av.y)))},
+                {av.z.subtract(bv.z).negate(), zero,                         av.x.subtract(bv.x),          ap.z.subtract(bp.z),          zero,                         ap.x.subtract(bp.x).negate(), bp.x.multiply(bv.z).subtract(bp.z.multiply(bv.x)).subtract(ap.x.multiply(av.z).subtract(ap.z.multiply(av.x)))},
+                {av.z.subtract(cv.z).negate(), zero,                         av.x.subtract(cv.x),          ap.z.subtract(cp.z),          zero,                         ap.x.subtract(cp.x).negate(), cp.x.multiply(cv.z).subtract(cp.z.multiply(cv.x)).subtract(ap.x.multiply(av.z).subtract(ap.z.multiply(av.x)))},
+                {zero,                         av.z.subtract(bv.z),          av.y.subtract(bv.y).negate(), zero,                         ap.z.subtract(bp.z).negate(), ap.y.subtract(bp.y),          bp.z.multiply(bv.y).subtract(bp.y.multiply(bv.z)).subtract(ap.z.multiply(av.y).subtract(ap.y.multiply(av.z)))},
+                {zero,                         av.z.subtract(cv.z),          av.y.subtract(cv.y).negate(), zero,                         ap.z.subtract(cp.z).negate(), ap.y.subtract(cp.y),          cp.z.multiply(cv.y).subtract(cp.y.multiply(cv.z)).subtract(ap.z.multiply(av.y).subtract(ap.y.multiply(av.z)))}
         };
 // @formatter: on
         return result;
     }
-
+    
     /**
      * Gauss elimination
      * 
      * @param c the matrix of the linear equation
      */
-    private static void solve(double[][] c) {
+    private static void solve(BigDecimal[][] c) {
         for (int row = 0; row < c.length; row++) {
             // 1. set c[row][row] equal to 1
-            double factor = c[row][row];
+            BigDecimal factor = c[row][row];
             for (int col = 0; col < c[row].length; col++) {
-                c[row][col] /= factor;
+                c[row][col] = c[row][col].divide(factor, PRECISION_100, RoundingMode.HALF_EVEN);
             }
 
             // 2. set c[row][row2] equal to 0
             for (int row2 = 0; row2 < c.length; row2++) {
                 if (row2 != row) {
-                    double factor2 = -c[row2][row];
+                    BigDecimal factor2 = c[row2][row].negate();
                     for (int col = 0; col < c[row2].length; col++) {
-                        c[row2][col] += factor2 * c[row][col];
+                        c[row2][col] = c[row2][col].add(factor2.multiply(c[row][col]));
                     }
                 }
             }
@@ -165,5 +170,11 @@ public class Day24 {
             return Math.signum(intersection.x-position.x) == Math.signum(velocity.x) && Math.signum(intersection.y-position.y) == Math.signum(velocity.y);
         }
         
+    }
+    
+    private record BDCoord(BigDecimal x, BigDecimal y, BigDecimal z) {
+        static BDCoord fromCoord(Coord coord) {
+            return new BDCoord(BigDecimal.valueOf(coord.x), BigDecimal.valueOf(coord.y), BigDecimal.valueOf(coord.z));
+        }
     }
 }
