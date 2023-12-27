@@ -191,26 +191,52 @@ public class Day23 {
             BitSet startBs = new BitSet(forks.size());
             startBs.set(forkIds.get(start));
             stack.add(new Step(startId, startBs, 0));
-            int[] longest = new int[] {0};
-            while(!stack.isEmpty()) {
-                Step curr = stack.pop();
-                BitSet cons = connections.get(curr.last);
-                cons.stream().forEach(i -> {
-                    if (cons.get(i) && !curr.history.get(i)) {
-                        int newCost = curr.length + costs.get(new Edge(curr.last, i));
-                        if (i == targetId && longest[0] < newCost) {
-                            longest[0] = newCost;
-                        } else {
-                            BitSet nextSet = (BitSet) curr.history.clone();
-                            nextSet.set(i);
-                            Step nextStep = new Step(i, nextSet, newCost);
-                            stack.push(nextStep);
-                        }
-                    }
-                });
-            }
-            return longest[0];
+            return new StepTask(new Step(startId, startBs, 0), forkIds, connections, costs, targetId).fork().join();
         }
+        
+        private static class StepTask extends RecursiveTask<Integer> {
+            private final Step toProcess;
+            private final Map<Coord, Integer> forkIds;
+            private final Map<Integer, BitSet> connections;
+            private final Map<Edge, Integer> costs;
+            private final int target;
+            
+            StepTask(Step toProcess, Map<Coord, Integer> forkIds, Map<Integer, BitSet> connections, Map<Edge, Integer> costs, int target) {
+                this.toProcess = toProcess;
+                this.forkIds = forkIds;
+                this.connections = connections;
+                this.costs = costs;
+                this.target = target;
+            }
+            
+            @Override
+            protected Integer compute() {
+
+                if (toProcess.last == target) {
+                    return toProcess.length;
+                }
+                List<StepTask> nextTasks = new ArrayList<>();
+                BitSet cons = connections.get(toProcess.last);
+
+                for (var i : cons.stream().toArray()) {
+                    if (cons.get(i) && !toProcess.history.get(i)) {
+                        int newCost = toProcess.length + costs.get(new Edge(toProcess.last, i));
+                        BitSet nextSet = (BitSet) toProcess.history.clone();
+                        nextSet.set(i);
+                        Step nextStep = new Step(i, nextSet, newCost);
+                        StepTask nextTask = new StepTask(nextStep, forkIds, connections, costs, target);
+                        nextTasks.add(nextTask);
+                        nextTask.fork();
+                    }
+                }
+                if (nextTasks.isEmpty()) {
+                    return 0;
+                } else {
+                    return nextTasks.stream().mapToInt(t -> t.join()).max().orElseThrow();
+                }
+            }
+        }
+        
         
         private record Step(int last, BitSet history, int length) {}
         private record Edge(int from, int to) {
