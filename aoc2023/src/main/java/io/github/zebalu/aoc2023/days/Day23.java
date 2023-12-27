@@ -195,6 +195,7 @@ public class Day23 {
         }
         
         private static class StepTask extends RecursiveTask<Integer> {
+            private static final long serialVersionUID = 1L;
             private final Step toProcess;
             private final Map<Coord, Integer> forkIds;
             private final Map<Integer, BitSet> connections;
@@ -232,7 +233,7 @@ public class Day23 {
                 if (nextTasks.isEmpty()) {
                     return 0;
                 } else {
-                    return nextTasks.stream().mapToInt(t -> t.join()).max().orElseThrow();
+                    return nextTasks.stream().mapToInt(StepTask::join).max().orElseThrow();
                 }
             }
         }
