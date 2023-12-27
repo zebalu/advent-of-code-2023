@@ -3,18 +3,29 @@ package io.github.zebalu.aoc2023.days;
 import java.nio.file.*;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.*;
 import java.util.function.*;
 
 public class Day23 {
     
     public static void main(String[] args) {
         var maze = readInput().lines().toList();
+        
         Coord start = new Coord(1,0);
         Coord target = new Coord(maze.size()-2, maze.size()-1);
-        var longest = longestPathLength(maze, start, target, (m,n)->n.part1Neighbours(m), n->true);
-        System.out.println(longest);
-        WeightedGraph wg = new WeightedGraph(maze, start, target);
-        System.out.println(wg.longestPath(start, target));
+        
+        ForkJoinTask<Integer> part1Task = ForkJoinPool.commonPool().submit(()->{
+            WeightedGraph part1Graph = new WeightedGraph(maze, start, target, (m,c)->c.part1Neighbours(m));
+            return part1Graph.longestPath(start, target);
+        });
+        
+        ForkJoinTask<Integer> part2Task = ForkJoinPool.commonPool().submit(()->{
+            WeightedGraph part1Graph = new WeightedGraph(maze, start, target, (m,c)->c.part2Neighbours(m));
+            return part1Graph.longestPath(start, target);
+        });
+        
+        System.out.println(part1Task.join());
+        System.out.println(part2Task.join());
     }
     
     private static String readInput() {
@@ -136,7 +147,7 @@ public class Day23 {
         private Map<Integer, BitSet> connections = new LinkedHashMap<Integer, BitSet>();
         private Map<Edge, Integer> costs = new LinkedHashMap<>();
         
-        public WeightedGraph(List<String> maze, Coord start, Coord target) {
+        public WeightedGraph(List<String> maze, Coord start, Coord target, BiFunction<List<String>, Coord, List<Coord>> walkableNeighbourExtractor) {
             forks.add(start);
             int id = 0;
             forkIds.put(start, id);
@@ -146,7 +157,7 @@ public class Day23 {
                     char ch = line.charAt(x);
                     if(ch != '#') {
                         Coord c = new Coord(x,y);
-                        if(c.part2Neighbours(maze).size()>2) {
+                        if(walkableNeighbourExtractor.apply(maze, c).size()>2) {
                             forks.add(c);
                             forkIds.put(c, ++id);
                         }
@@ -161,7 +172,7 @@ public class Day23 {
             for(Entry<Coord, Integer> iEntry: forkIds.entrySet()) {
                 for(Entry<Coord, Integer> jEntry: forkIds.entrySet()) {
                     if(iEntry.getValue() < jEntry.getValue()) {
-                        int length = longestPathLength(maze, iEntry.getKey(), jEntry.getKey(), (m,n)->n.part2Neighbours(m), c->!forks.contains(c) || c.equals(jEntry.getKey()));
+                        int length = longestPathLength(maze, iEntry.getKey(), jEntry.getKey(), walkableNeighbourExtractor, c->!forks.contains(c) || c.equals(jEntry.getKey()));
                         if(length > 0) {
                             connections.get(iEntry.getValue()).set(jEntry.getValue());
                             connections.get(jEntry.getValue()).set(iEntry.getValue());
