@@ -45,7 +45,7 @@ for(int i=0; i<25; ++i) {
     tasks.register("day$d", JavaExec) {
         classpath = sourceSets.main.runtimeClasspath
         mainClass = "io.github.zebalu.aoc2023.days.Day${d}"
-        group = 'day'
+        group = 'AoC day'
         description = "Execute Day$d"
     }
 }
@@ -59,6 +59,6 @@ tasks.register("downloadInputs", JavaExec) {
         classpath = sourceSets.main.runtimeClasspath
         mainClass = "io.github.zebalu.aoc2023.main.App"
         args 'download'
-        group = 'AOC util'
+        group = 'AoC util'
         description = "download inputs if you have AOC_SESSION_ID environment variable set correctly"
 }
