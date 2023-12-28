@@ -28,7 +28,7 @@ public class Day23 {
         }
     }
     
-    private static Map<Coord, Integer> longestPathToAny(List<String> maze, Coord start, Map<Coord, Integer> idMap, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
+    private static Map<Coord, Integer> longestPathToAny(List<String> maze, Coord start, Map<Coord, Integer> idMap, BiFunction<List<String>, Coord, List<Coord>> nextList) {
         Map<Coord, Integer> result = new HashMap<>();
         Stack<SequencedSet<Coord>> stack = new Stack<>();
         stack.add(new LinkedHashSet<>(Set.of(start)));
@@ -37,7 +37,7 @@ public class Day23 {
             if(idMap.containsKey(curr.getLast()) && !curr.getLast().equals(start)) {
                 result.compute(curr.getLast(), (k,v)->(v == null) ? curr.size()-1 : Math.max(v, curr.size()-1));
             } else {
-                nextList.apply(maze, curr.getLast()).stream().filter(n->filter.test(n) && !curr.contains(n)).forEach(n->{
+                nextList.apply(maze, curr.getLast()).stream().filter(n->!curr.contains(n)).forEach(n->{
                     var next = new LinkedHashSet<>(curr);
                     next.add(n);
                     stack.push(next);
@@ -130,9 +130,10 @@ public class Day23 {
     private static class WeightedGraph {
         private SequencedSet<Coord> forks = new LinkedHashSet<>();
         private SequencedMap<Coord, Integer> forkIds = new LinkedHashMap<>();
-        private Map<Integer, BitSet> connections = new LinkedHashMap<>();
-        private Map<Integer, Map<Integer, Integer>> costs = new LinkedHashMap<>();
+        private List<Integer>[] connections; 
+        private int[][] costs;
         
+        @SuppressWarnings("unchecked")
         public WeightedGraph(List<String> maze, Coord start, Coord target, BiFunction<List<String>, Coord, List<Coord>> walkableNeighbourExtractor) {
             forks.add(start);
             int id = 0;
@@ -152,26 +153,21 @@ public class Day23 {
             }
             forks.add(target);
             forkIds.put(target, ++id);
+            connections = new List[forkIds.size()];
+            costs = new int[forkIds.size()][];
             for(int i=0; i<forkIds.size(); ++i) {
-                connections.put(i, new BitSet(forks.size()));
+                //connections[i] = 0L; //.put(i, new BitSet(forks.size()));
+                connections[i] = new ArrayList<Integer>();
+                costs[i] = new int[forkIds.size()];
             }
             List<Entry<Coord, Integer>> entries = new ArrayList<>(forkIds.entrySet());
-            for(int i=0; i<entries.size()-1; ++i) {
+            for(int i=0; i<entries.size(); ++i) {
                 Entry<Coord, Integer> iEntry = entries.get(i);
-                Map<Coord, Integer> pathes = longestPathToAny(maze, iEntry.getKey(), forkIds, walkableNeighbourExtractor, c->true);
+                Map<Coord, Integer> pathes = longestPathToAny(maze, iEntry.getKey(), forkIds, walkableNeighbourExtractor);
                 for(var distE: pathes.entrySet()) {
                     int distId = forkIds.get(distE.getKey());
-                    connections.get(iEntry.getValue()).set(distId);
-                    costs.compute(iEntry.getValue(), (k,v)->{
-                        Map<Integer,Integer> costMap;
-                        if(v == null) {
-                            costMap = new HashMap<>();
-                        } else {
-                            costMap = v;
-                        }
-                        costMap.put(distId, distE.getValue());
-                        return costMap;
-                    });
+                    connections[iEntry.getValue()].add(distId);
+                    costs[iEntry.getValue()][distId]=distE.getValue();
                 }
             }
         }
@@ -179,27 +175,24 @@ public class Day23 {
         int longestPath(Coord start, Coord target) {
             int startId = forkIds.get(start);
             int targetId = forkIds.get(target);
-            BitSet startBs = new BitSet(forks.size());
-            startBs.set(forkIds.get(start));
-            return longestPath(startId, targetId, 0, startBs);
+            return longestPath(startId, targetId, 0, 0L);
         }
         
-        int longestPath(int startId, int targetId, int dist, BitSet visited) {
+        
+        int longestPath(int startId, int targetId, int dist, long visited) {
             int longest = Integer.MIN_VALUE;
-            for (var c : connections.get(startId).stream().toArray()) {
-                if (!visited.get(c)) {
-                    int newCost = dist + costs.get(startId).get(c);
+            for(int c : connections[startId]) {
+                long v = 1L << c;
+                if ((visited&v) == 0L) {
+                    int newCost = dist + costs[startId][c];
                     if (c == targetId) {
                         longest = Math.max(longest, newCost);
                     } else {
-                        BitSet newVisited = (BitSet) visited.clone();
-                        newVisited.set(c);
-                        longest = Math.max(longest, longestPath(c, targetId, newCost, newVisited));
+                        longest = Math.max(longest, longestPath(c, targetId, newCost, visited | v));
                     }
                 }
             }
             return longest;
         }
-        
     }
 }
