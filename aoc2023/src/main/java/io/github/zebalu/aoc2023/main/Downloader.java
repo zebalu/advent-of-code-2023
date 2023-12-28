@@ -35,6 +35,7 @@ class Downloader {
                         try (var pw = new PrintWriter(target)) {
                             pw.print(data);
                         }
+                        System.out.println("Saved: "+target.getAbsolutePath());
                     } catch (IOException | InterruptedException | URISyntaxException e) {
                         throw new IllegalStateException("Could not download input: " + i, e);
                     }

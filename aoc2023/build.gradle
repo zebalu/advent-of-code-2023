@@ -30,14 +30,16 @@ java {
     }
 }
 
+def aocMainClassName = 'io.github.zebalu.aoc2023.main.App'
+
 application {
     // Define the main class for the application.
-    mainClass = 'io.github.zebalu.aoc2023.main.App'
+    mainClass = aocMainClassName
 }
 
 jar {
   manifest {
-    attributes 'Main-Class': application.mainClass
+    attributes 'Main-Class': aocMainClassName
   }
 }
 
