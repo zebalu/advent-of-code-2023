@@ -12,7 +12,7 @@ public class Day25 {
         var partitioning = partitionGraphWithMaxCut(graph, 3);
         
         System.out.println(partitioning.part1.size()*partitioning.part2.size());
-        System.out.println("Marry Christmas!");
+        System.out.println("Merry Christmas!");
     }
 
     private static String readInput() {
