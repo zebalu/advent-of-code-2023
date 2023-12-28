@@ -1,12 +1,18 @@
 package io.github.zebalu.aoc2023.days;
 
 import java.nio.file.*;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Day23 {
+    
+    private static final boolean EXAMPLE = false;
     
     public static void main(String[] args) {
         var maze = readInput().lines().toList();
@@ -16,20 +22,54 @@ public class Day23 {
         
         ForkJoinTask<Integer> part1Task = ForkJoinPool.commonPool().submit(()->{
             WeightedGraph part1Graph = new WeightedGraph(maze, start, target, (m,c)->c.part1Neighbours(m));
-            return part1Graph.longestPath(start, target);
+            int result = part1Graph.longestPath(start, target);
+            return result;
         });
         
         ForkJoinTask<Integer> part2Task = ForkJoinPool.commonPool().submit(()->{
-            WeightedGraph part1Graph = new WeightedGraph(maze, start, target, (m,c)->c.part2Neighbours(m));
-            return part1Graph.longestPath(start, target);
+            WeightedGraph part2Graph = new WeightedGraph(maze, start, target, (m,c)->c.part2Neighbours(m));
+            int result = part2Graph.longestPath(start, target);
+            return result;
         });
         
         System.out.println(part1Task.join());
         System.out.println(part2Task.join());
+        
+        
+       // WeightedGraph part1Graph = new WeightedGraph(maze, start, target, (m,c)->c.part1Neighbours(m));
+       // WeightedGraph part2Graph = new WeightedGraph(maze, start, target, (m,c)->c.part2Neighbours(m));
+        //System.out.println(new HikingTrails(readInput().lines().toList(), 1).findLongestHike());
+        //System.out.println(new HikingTrails(readInput().lines().toList(), 2).findLongestHike());
     }
     
     private static String readInput() {
         try {
+            if(EXAMPLE) {
+                return """
+#.#####################
+#.......#########...###
+#######.#########.#.###
+###.....#.>.>.###.#.###
+###v#####.#v#.###.#.###
+###.>...#.#.#.....#...#
+###v###.#.#.#########.#
+###...#.#.#.......#...#
+#####.#.#.#######.#.###
+#.....#.#.#.......#...#
+#.#####.#.#.#########v#
+#.#...#...#...###...>.#
+#.#.#v#######v###.###v#
+#...#.>.#...>.>.#.###.#
+#####v#.#.###v#.#.###.#
+#.....#...#...#.#.#...#
+#.#########.###.#.#.###
+#...###...#...#...#.###
+###.###.#.###v#####v###
+#...#...#.#.>.>.#.>.###
+#.###.###.#.###.#.#v###
+#.....###...###...#...#
+#####################.#""";
+            }
             return Files.readString(Path.of("day23.txt").toAbsolutePath());
         } catch(Exception e) {
             throw new IllegalStateException(e);
@@ -57,9 +97,33 @@ public class Day23 {
         return result;
     }
     
+    private static Map<Coord, Integer> longestPathToAny(List<String> maze, Coord start, Map<Coord, Integer> idMap, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
+        Map<Coord, Integer> result = new HashMap<>();
+        Stack<SequencedSet<Coord>> stack = new Stack<>();
+        stack.add(new LinkedHashSet<>(Set.of(start)));
+        while(!stack.isEmpty()) {
+            SequencedSet<Coord> curr = stack.pop();
+            if(idMap.containsKey(curr.getLast()) && !curr.getLast().equals(start)) {
+                result.compute(curr.getLast(), (k,v)->(v == null) ? curr.size()-1 : Math.max(v, curr.size()-1));
+            } else {
+                nextList.apply(maze, curr.getLast()).stream().filter(n->filter.test(n) && !curr.contains(n)).forEach(n->{
+                    var next = new LinkedHashSet<>(curr);
+                    next.add(n);
+                    stack.push(next);
+                });
+            }
+        }
+        return result;
+    }
+    
     private static int longestPathLength(List<String> maze, Coord start, Coord target, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
         return longestPath(maze, start, target, nextList, filter).size()-1;
     }
+   /* 
+    private static Map<Coord, Integer> longestPathLengthToAny(List<String> maze, Coord start, Map<Coord, Integer> junktions, BiFunction<List<String>, Coord, List<Coord>> nextList, Predicate<Coord> filter) {
+        return longestPathToAny(maze, start, junktions, nextList, filter).size()-1;
+    }
+    */
 
     private record Coord(int x, int y) {
         char extract(List<String> maze) {
@@ -67,7 +131,7 @@ public class Day23 {
         }
         
         char extractAny(List<String> maze) {
-            if(y<0 || x<0 || maze.size()<y || maze.getFirst().length()<=x) {
+            if(y<0 || x<0 || maze.size()<=y || maze.getFirst().length()<=x) {
                 return '#';
             }
             return extract(maze);
@@ -157,7 +221,7 @@ public class Day23 {
                     char ch = line.charAt(x);
                     if(ch != '#') {
                         Coord c = new Coord(x,y);
-                        if(walkableNeighbourExtractor.apply(maze, c).size()>2) {
+                        if(/*walkableNeighbourExtractor.apply(maze, c)*/c.part2Neighbours(maze).size()>2) {
                             forks.add(c);
                             forkIds.put(c, ++id);
                         }
@@ -169,6 +233,31 @@ public class Day23 {
             for(int i=0; i<forkIds.size(); ++i) {
                 connections.put(i, new BitSet(forks.size()));
             }
+            List<Entry<Coord, Integer>> entries = new ArrayList<>(forkIds.entrySet());
+            for(int i=0; i<entries.size()-1; ++i) {
+                Entry<Coord, Integer> iEntry = entries.get(i);
+                /*
+                for(int j=i+1; j<entries.size()-1; ++j) {
+                    Entry<Coord, Integer> jEntry = entries.get(j);
+                    int length = longestPathLength(maze, iEntry.getKey(), jEntry.getKey(), walkableNeighbourExtractor, c->!forks.contains(c) || c.equals(jEntry.getKey()));
+                    if(length > 0) {
+                        connections.get(iEntry.getValue()).set(jEntry.getValue());
+                        connections.get(jEntry.getValue()).set(iEntry.getValue());
+                        costs.put(new Edge(iEntry.getValue(), jEntry.getValue()), length);
+                        costs.put(new Edge(jEntry.getValue(), iEntry.getValue()), length);
+                    }
+                }
+                */
+                Map<Coord, Integer> pathes = longestPathToAny(maze, iEntry.getKey(), forkIds, walkableNeighbourExtractor, c->true);
+                for(var distE: pathes.entrySet()) {
+                    int distId = forkIds.get(distE.getKey());
+                    connections.get(iEntry.getValue()).set(distId);
+                    //connections.get(distId).set(iEntry.getValue());
+                    costs.put(new Edge(iEntry.getValue(), distId), distE.getValue());
+                    //costs.put(new Edge(distId, iEntry.getValue()), distE.getValue());
+                }
+            }
+            /*
             for(Entry<Coord, Integer> iEntry: forkIds.entrySet()) {
                 for(Entry<Coord, Integer> jEntry: forkIds.entrySet()) {
                     if(iEntry.getValue() < jEntry.getValue()) {
@@ -182,6 +271,7 @@ public class Day23 {
                     }
                 }
             }
+            */
         }
         
         int longestPath(Coord start, Coord target) {
@@ -247,4 +337,222 @@ public class Day23 {
             }
         }
     }
+    
+    private static class HikingTrails {
+
+        record Path(int to, int dist) {}
+
+        final CharTable table;
+        final int source;
+        final int target;
+        final List<Coord> junctions = new ArrayList<>();
+        final List<List<Path>> junctionPaths = new ArrayList<>();
+
+        HikingTrails(List<String> lines, int part) {
+            Instant s = Instant.now();
+            table = new CharTable(lines);
+
+            // Collect junction nodes
+            source = 0;
+            target = 1;
+            junctions.add(table.firstRow().filter(c -> table.get(c) == '.').findFirst().orElseThrow());
+            junctions.add(table.lastRow().filter(c -> table.get(c) == '.').findFirst().orElseThrow());
+            table.cells()
+                    .filter(c -> table.get(c) != '#')
+                    .filter(c -> table.neighbors(c).filter(n -> table.get(n) != '#').count() > 2)
+                    .forEach(junctions::add);
+
+            // Collect paths between junctions
+            var junctionSet = new HashSet<>(junctions);
+            IntStream.range(0, junctions.size()).forEach(i -> {
+                var current = junctions.get(i);
+                var bfsResult = Bfs.run(current, cell -> {
+                    var next = part == 1 && table.get(cell) != '.'
+                            ? cell.part1Neighbours(lines)
+                            : table.neighbors(cell).filter(n -> table.get(n) != '#').toList();
+                    return !cell.equals(current) && next.size() > 2 ? List.of() : next;
+                });
+                junctionPaths.add(bfsResult.entrySet().stream()
+                        .filter(e -> junctionSet.contains(e.getKey()) && !e.getKey().equals(current))
+                        .map(e -> new Path(junctions.indexOf(e.getKey()), (int) e.getValue().size()-1))
+                        .toList());
+            });
+
+            // Check assumption: at most 64 junction nodes (to represent sets of them using bits of a long value)
+            if (junctions.size() > Long.BYTES * 8) {
+                throw new IllegalArgumentException("Too many junction nodes.");
+            }
+            System.out.println("hiking "+part+" build: "+Duration.between(s, Instant.now()).toMillis());
+        }
+
+        long findLongestHike() {
+            Instant s = Instant.now();
+            long longest = findLongestPath(source, 0, 1L << source);
+            System.out.println("hiking ? run: "+Duration.between(s, Instant.now()).toMillis());
+            return longest;
+        }
+
+        private long findLongestPath(int current, int dist, long nodes) {
+            if (current == target) {
+                return dist;
+            }
+
+            long result = -1;
+            for (var path : junctionPaths.get(current)) {
+                long bit = 1L << path.to;
+                if ((nodes & bit) == 0) {
+                    result = Math.max(result, findLongestPath(path.to, dist + path.dist, nodes | bit));
+                }
+            }
+            return result;
+        }
+        
+        private record CharTable(List<String> lines) {
+            Stream<Coord> firstRow() {
+                return IntStream.range(0, lines.getFirst().length()).mapToObj(x->new Coord(x,0));
+            }
+            
+            Stream<Coord> lastRow() {
+                return IntStream.range(0, lines.getFirst().length()).mapToObj(x->new Coord(x,lines.size()-1));
+            }
+            
+            Stream<Coord> cells() {
+                return IntStream.range(0, lines.size()).mapToObj(y->IntStream.range(0, lines.get(y).length()).mapToObj(x->new Coord(x,y))).flatMap(s->s);
+            }
+            
+            Stream<Coord> neighbors(Coord c) {
+                return Stream.of(c.north(), c.east(), c.south(), c.west());
+            }
+            
+            char get(Coord c) {
+                if(0<=c.x && 0<=c.y && c.y < lines.size() && c.x < lines.get(c.y).length()) {
+                    return lines.get(c.y).charAt(c.x);
+                } else {
+                    return '#';
+                }
+            }
+        }
+        
+        private static final class Bfs {
+
+            private Bfs() {
+            }
+
+            /**
+             * Calculates the distance (in terms the number of edges) along a shortest path from the given source node
+             * to the nearest target node specified by the given predicate.
+             * For more details, see {@link #findPath(Object, Function, Predicate)}.
+             *
+             * @throws java.util.NoSuchElementException if no target nodes are reachable from the source node.
+             */
+            public static <T> int dist(T source,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider,
+                    Predicate<? super T> targetPredicate) {
+                return (int) findPath(source, neighborProvider, targetPredicate).orElseThrow().size();
+            }
+
+            /**
+             * Finds a shortest path (in terms of the number of edges) from the given source node to a target node specified
+             * by the given predicate.
+             *
+             * @param source the source node.
+             * @param neighborProvider the neighbor provider function. For each node {@code u}, it has to provide the
+             *         end nodes of the outgoing edges of {@code u} as a collection.
+             * @param targetPredicate a predicate that returns true for the target node(s). It can accept multiple
+             *         nodes, in which case a shortest path to one of the nearest target nodes is to be found.
+             *         However, for a single target node {@code t}, you can simply use {@code t::equals}.
+             * @return a shortest {@link Path} to the nearest target node or an empty optional if no target nodes are
+             *         reachable from the source node.
+             */
+            public static <T> Optional<List<T>> findPath(T source,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider,
+                    Predicate<? super T> targetPredicate) {
+                return findPathFromAny(List.of(source), neighborProvider, targetPredicate);
+            }
+
+            /**
+             * Finds a shortest path (in terms of the number of edges) from any of the given source nodes to a target node
+             * specified by the given predicate.
+             *
+             * @param sources the source nodes.
+             * @param neighborProvider the neighbor provider function. For each node {@code u}, it has to provide the
+             *         end nodes of the outgoing edges of {@code u} as a collection.
+             * @param targetPredicate a predicate that returns true for the target node(s). It can accept multiple
+             *         nodes, in which case a shortest path to one of the nearest target nodes is to be found.
+             *         However, for a single target node {@code t}, you can simply use {@code t::equals}.
+             * @return a shortest {@link Path} to the nearest target node or an empty optional if no target nodes are
+             *         reachable from the source nodes.
+             */
+            public static <T> Optional<List<T>> findPathFromAny(Iterable<? extends T> sources,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider,
+                    Predicate<? super T> targetPredicate) {
+                var results = new HashMap<T, List<T>>();
+                return runBfs(sources, neighborProvider, targetPredicate, results);
+            }
+
+            /**
+             * Runs the algorithm to find shortest paths (in terms of the number of edges) to all nodes reachable from the
+             * given source node.
+             *
+             * @param source the source node.
+             * @param neighborProvider the neighbor provider function. For each node {@code u}, it has to provide the
+             *         end nodes of the outgoing edges of {@code u} as a collection.
+             * @return a map that associates a {@link Path} with each node reachable from the source node.
+             */
+            public static <T> Map<T, List<T>> run(T source,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider) {
+                return runFromAny(List.of(source), neighborProvider);
+            }
+
+            /**
+             * Runs the algorithm to find shortest paths (in terms of the number of edges) to all nodes reachable from any
+             * of the given source nodes.
+             *
+             * @param sources the source nodes.
+             * @param neighborProvider the neighbor provider function. For each node {@code u}, it has to provide the
+             *         end nodes of the outgoing edges of {@code u} as a collection.
+             * @return a map that associates a {@link Path} with each node reachable from the source nodes.
+             */
+            public static <T> Map<T, List<T>> runFromAny(Iterable<? extends T> sources,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider) {
+                var results = new HashMap<T, List<T>>();
+                runBfs(sources, neighborProvider, n -> false, results);
+                return results;
+            }
+
+            private static <T> Optional<List<T>> runBfs(Iterable<? extends T> sources,
+                    Function<? super T, ? extends Iterable<T>> neighborProvider,
+                    Predicate<? super T> targetPredicate,
+                    Map<T, List<T>> results) {
+
+                var queue = new ArrayDeque<List<T>>();
+                for (var source : sources) {
+                    var path = new ArrayList<T>(List.of(source));
+                    results.put(source, path);
+                    queue.add(path);
+                }
+
+                while (!queue.isEmpty()) {
+                    var path = queue.poll();
+                    if (targetPredicate.test(path.getLast())) {
+                        return Optional.of(path);
+                    }
+
+                    for (T neighbor : neighborProvider.apply(path.getLast())) {
+                        if (!results.containsKey(neighbor)) {
+                            var p = new ArrayList<>(path);
+                            p.addLast(neighbor);
+                            results.put(neighbor, p);
+                            queue.add(p);
+                        }
+                    }
+                }
+
+                return Optional.empty();
+            }
+
+        }
+
+    }
+
 }
